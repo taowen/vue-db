@@ -1,0 +1,21 @@
+{
+  "0 debug pnpm:scope": {
+    "selected": 1,
+    "workspacePrefix": "/home/taowen/vue-db"
+  },
+  "1 error pnpm": {
+    "shortMessage": "Command failed with exit code 1: /mnt/c/Users/taowen/AppData/Roaming/npm/pnpm add create-demo-counter --global --global-dir /tmp/dlx-4800 --dir /tmp/dlx-4800",
+    "command": "/mnt/c/Users/taowen/AppData/Roaming/npm/pnpm add create-demo-counter --global --global-dir /tmp/dlx-4800 --dir /tmp/dlx-4800",
+    "escapedCommand": "\"/mnt/c/Users/taowen/AppData/Roaming/npm/pnpm\" add create-demo-counter --global --global-dir \"/tmp/dlx-4800\" --dir \"/tmp/dlx-4800\"",
+    "exitCode": 1,
+    "failed": true,
+    "timedOut": false,
+    "isCanceled": false,
+    "killed": false,
+    "err": {
+      "name": "pnpm",
+      "message": "Command failed with exit code 1: /mnt/c/Users/taowen/AppData/Roaming/npm/pnpm add create-demo-counter --global --global-dir /tmp/dlx-4800 --dir /tmp/dlx-4800",
+      "stack": "pnpm: Command failed with exit code 1: /mnt/c/Users/taowen/AppData/Roaming/npm/pnpm add create-demo-counter --global --global-dir /tmp/dlx-4800 --dir /tmp/dlx-4800\n    at makeError (/home/taowen/n/pnpm-global/5/node_modules/.pnpm/pnpm@6.31.0/node_modules/pnpm/dist/pnpm.cjs:42472:17)\n    at handlePromise (/home/taowen/n/pnpm-global/5/node_modules/.pnpm/pnpm@6.31.0/node_modules/pnpm/dist/pnpm.cjs:43043:33)\n    at processTicksAndRejections (internal/process/task_queues.js:93:5)\n    at async Object.handler (/home/taowen/n/pnpm-global/5/node_modules/.pnpm/pnpm@6.31.0/node_modules/pnpm/dist/pnpm.cjs:177416:7)\n    at async /home/taowen/n/pnpm-global/5/node_modules/.pnpm/pnpm@6.31.0/node_modules/pnpm/dist/pnpm.cjs:182106:21\n    at async run (/home/taowen/n/pnpm-global/5/node_modules/.pnpm/pnpm@6.31.0/node_modules/pnpm/dist/pnpm.cjs:182080:34)\n    at async runPnpm (/home/taowen/n/pnpm-global/5/node_modules/.pnpm/pnpm@6.31.0/node_modules/pnpm/dist/pnpm.cjs:182299:5)\n    at async /home/taowen/n/pnpm-global/5/node_modules/.pnpm/pnpm@6.31.0/node_modules/pnpm/dist/pnpm.cjs:182291:7"
+    }
+  }
+}

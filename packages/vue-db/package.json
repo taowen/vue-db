@@ -1,0 +1,8 @@
+{
+    "name": "vue-db",
+    "version": "0.0.1",
+    "description": "vue data binding",
+    "main": "src/index.ts",
+    "dependencies": {
+    }
+  }
