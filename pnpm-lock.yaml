@@ -20,7 +20,10 @@ importers:
       vue-tsc: 0.29.8_typescript@4.5.5
 
   packages/vue-db:
-    specifiers: {}
+    specifiers:
+      vue: ^3.2.25
+    dependencies:
+      vue: 3.2.31
 
 packages:
 

@@ -4,5 +4,6 @@
     "description": "vue data binding",
     "main": "src/index.ts",
     "dependencies": {
+      "vue": "^3.2.25"
     }
   }
