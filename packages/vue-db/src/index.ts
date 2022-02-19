@@ -1,4 +1,4 @@
-import { ComponentInternalInstance, isVNode, Ref, ref, VNode } from 'vue';
+import { ComponentInternalInstance, isVNode, KeepAlive, Ref, ref, VNode } from 'vue';
 
 export function onCreated(this: any) {
     register(this);
@@ -21,7 +21,14 @@ export function load<T extends C>(componentType: T, criteria: Record<string, any
 }
 
 export function pageOf(proxy: any) {
-    return proxy.$.root.proxy;
+    return getPageRoot(proxy.$).proxy;
+}
+
+function getPageRoot(node: ComponentInternalInstance) {
+    if (!node.parent || (node.parent.type as any) === KeepAlive) {
+        return node;
+    }
+    return getPageRoot(node.parent);
 }
 
 export function query<T extends C>(componentType: T, criteria: Record<string, any>): (T['methods'] & ReturnType<NonNullable<T['data']>>)[] {
