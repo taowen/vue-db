@@ -1,7 +1,7 @@
 <script lang="ts">
-import { defineComponent } from 'vue-db';
+import * as vdb from 'vue-db';
 
-export default defineComponent({}, class {
+export default vdb.defineComponent({}, class {
     count = 1;
 
     increase() {

@@ -1,12 +1,10 @@
 <script lang="ts">
-import { ComponentHelper, defineComponent } from 'vue-db';
+import * as vdb from 'vue-db';
 import CounterBox from './CounterBox.vue';
 
-export default defineComponent({}, class {
-    constructor(private helper: ComponentHelper) {
-    }
+export default vdb.defineComponent({}, class {
     get displayBack() {
-        const counter = this.helper.load(CounterBox)?.count || 0;
+        const counter = vdb.load(this, CounterBox)?.count || 0;
         return counter + 20;
     }
 })

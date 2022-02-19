@@ -7,7 +7,7 @@ type FunctionsOf<T> = {
 export function defineComponent<T>(options: {
     components?: Record<string, Component>
     props?: (keyof T)[],
-}, bizClass: { new(helper: ComponentHelper): T }) {
+}, bizClass: { new(): T }) {
     const methods: any = {};
     const computed: any = {};
     for (const k of Object.getOwnPropertyNames(bizClass.prototype)) {
@@ -23,7 +23,7 @@ export function defineComponent<T>(options: {
         }
     }
     const props: Record<string, any> = {};
-    const propDefaults = new bizClass(undefined as any);
+    const propDefaults = new bizClass();
     for (const propName of options?.props || []) {
         props[propName as string] = {
             default: propDefaults[propName]
@@ -35,7 +35,7 @@ export function defineComponent<T>(options: {
         setup(props, ctx) {
             // trigger helper.query who queried this component type to recompute
             componentType.instanceCount.value++;
-            const self = new bizClass(new ComponentHelper()) as any;
+            const self = new bizClass() as any;
             if (self.setup) {
                 self.setup(props, ctx);
             }
@@ -55,32 +55,23 @@ export function defineComponent<T>(options: {
     return componentType;
 }
 
-export class ComponentHelper {
-
-    private currentInstance: ReturnType<typeof getCurrentInstance>;
-
-    constructor() {
-        this.currentInstance = getCurrentInstance();
-    }
-
-    load<T extends { methods?: any, instanceCount?: Ref<number> }>(componentType: T, criteria?: Record<string, any>): T['methods'] {
-        return this.query(componentType, criteria)[0];
-    }
-
-    query<T extends { methods?: any, instanceCount?: Ref<number> }>(componentType: T, criteria?: Record<string, any>): T['methods'][] {
-        if (!componentType.instanceCount) {
-            throw new Error(`${componentType} is not defined by vue-db.defineComponent`);
-        }
-        // will recompute when new instance created, 
-        // so we can reference a component instance event it has not been created yet
-        componentType.instanceCount.value;
-        const result = [];
-        query(result, this.currentInstance.root.subTree, componentType, criteria);
-        return result as any;
-    }
+export function load<T extends { methods?: any, instanceCount?: Ref<number> }>(proxy: any, componentType: T, criteria?: Record<string, any>): T['methods'] {
+    return query(proxy, componentType, criteria)[0];
 }
 
-function query(result: any[], vnode: VNode, componentType: any, criteria?: Record<string, any>) {
+export function query<T extends { methods?: any, instanceCount?: Ref<number> }>(proxy: any, componentType: T, criteria?: Record<string, any>): T['methods'][] {
+    if (!componentType.instanceCount) {
+        throw new Error(`${componentType} is not defined by vue-db.defineComponent`);
+    }
+    // will recompute when new instance created, 
+    // so we can reference a component instance event it has not been created yet
+    componentType.instanceCount.value;
+    const result = [];
+    _query(result, proxy.$.root.subTree, componentType, criteria);
+    return result as any;
+}
+
+function _query(result: any[], vnode: VNode, componentType: any, criteria?: Record<string, any>) {
     if (!vnode) {
         return;
     }
@@ -88,11 +79,11 @@ function query(result: any[], vnode: VNode, componentType: any, criteria?: Recor
         if (vnode.type === componentType && checkCriteria(vnode.component.proxy, criteria)) {
             result.push(vnode.component.proxy);
         }
-        query(result, vnode.component.subTree, componentType, criteria);
+        _query(result, vnode.component.subTree, componentType, criteria);
     } else if (Array.isArray(vnode.children)) {
         for (const child of vnode.children) {
             if (isVNode(child)) {
-                query(result, child, componentType, criteria);
+                _query(result, child, componentType, criteria);
             }
         }
     }

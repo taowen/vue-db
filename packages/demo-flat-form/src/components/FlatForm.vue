@@ -1,18 +1,16 @@
 <script lang="ts">
-import { ComponentHelper, defineComponent, dumpForm } from "vue-db";
+import * as vdb from "vue-db";
 import InputField from "./InputField.vue";
 
-export default defineComponent({ components: { InputField } }, class { 
-    constructor(private helper: ComponentHelper) {
-    }
+export default vdb.defineComponent({ components: { InputField } }, class { 
     get username() {
-        return this.helper.load(InputField, { name: 'username' })?.value;
+        return vdb.load(this, InputField, { name: 'username' })?.value;
     }
     get hobby() {
-        return this.helper.load(InputField, { name: 'hobby' })?.value;
+        return vdb.load(this, InputField, { name: 'hobby' })?.value;
     }
     onSubmit() {
-        console.log('!!! submit', dumpForm(this));
+        console.log('!!! submit', vdb.dumpForm(this));
     }
 });
 </script>

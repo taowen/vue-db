@@ -1,12 +1,10 @@
 <script lang="ts">
-import { ComponentHelper, defineComponent } from "vue-db";
+import * as vdb from "vue-db";
 import CounterBox from "./CounterBox.vue";
 
-export default defineComponent({}, class {
-    constructor(private helper: ComponentHelper) {
-    }
+export default vdb.defineComponent({}, class {
     onClicked() {
-        this.helper.load(CounterBox)?.increase();
+        vdb.load(this, CounterBox)?.increase();
     }
 })
 </script>
