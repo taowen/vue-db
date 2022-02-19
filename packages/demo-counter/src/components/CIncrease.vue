@@ -8,6 +8,7 @@ export default defineComponent({
         const currentPage = getCurrentPage();
         function onClicked() {
             const cvalue = currentPage.query(CValue)[0];
+            console.log(cvalue);
             cvalue.increase();
         }
         return { onClicked }
