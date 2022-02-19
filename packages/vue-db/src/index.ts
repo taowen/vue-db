@@ -56,10 +56,12 @@ export function defineComponent<T>(options: {
 }
 
 export function load<T extends { methods?: any, instanceCount?: Ref<number> }>(proxy: any, componentType: T, criteria?: Record<string, any>): T['methods'] {
+    assertProxy(proxy);
     return query(proxy, componentType, criteria)[0];
 }
 
 export function query<T extends { methods?: any, instanceCount?: Ref<number> }>(proxy: any, componentType: T, criteria?: Record<string, any>): T['methods'][] {
+    assertProxy(proxy);
     if (!componentType.instanceCount) {
         throw new Error(`${componentType} is not defined by vue-db.defineComponent`);
     }
@@ -102,13 +104,17 @@ function checkCriteria(proxy: any, criteria?: Record<string, any>) {
 }
 
 export function dumpForm(proxy: any, form?: Record<string, any>) {
+    assertProxy(proxy);
     const node: ComponentInternalInstance = proxy.$;
-    if (!node) {
-        throw new Error('dumpForm should be called from vue component method with this as argument');
-    }
     form = form || {};
     dumpComponent(form, node);
     return form;
+}
+
+function assertProxy(proxy: any) {
+    if (!proxy.$) {
+        throw new Error('first argument should be "this"');
+    }
 }
 
 function dumpVNode(form: Record<string, any>, node: VNode) {
