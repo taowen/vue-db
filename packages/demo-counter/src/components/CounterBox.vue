@@ -1,7 +1,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue-db';
 
-export default defineComponent(class {
+export default defineComponent({}, class {
     count = 1;
 
     increase() {

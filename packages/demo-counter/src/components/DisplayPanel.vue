@@ -2,7 +2,7 @@
 import { ComponentHelper, defineComponent } from 'vue-db';
 import CounterBox from './CounterBox.vue';
 
-export default defineComponent(class {
+export default defineComponent({}, class {
     constructor(private helper: ComponentHelper) {
     }
     get displayBack() {

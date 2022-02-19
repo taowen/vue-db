@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import FlatForm from './components/FlatForm.vue';
 </script>
 
 <template>
+<FlatForm/>
 </template>
 
 <style>
