@@ -1,9 +1,11 @@
 <script lang="ts">
-import { defineComponent } from 'vue-db';
+import { defineComponent } from 'vue';
+import * as vdb from 'vue-db';
 
 let counter = 1;
 
 export default defineComponent({
+    created: vdb.onCreated,
     props: {
         name: { required: true, type: String },
         label: { default: '' },

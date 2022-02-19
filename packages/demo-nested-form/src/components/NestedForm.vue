@@ -1,9 +1,11 @@
 <script lang="ts">
+import { defineComponent } from "vue";
 import * as vdb from "vue-db";
 import AddressForm from './AddressForm.vue';
 import { dumpForm } from "./dumpForm";
 
-export default vdb.defineComponent({
+export default defineComponent({
+    created: vdb.onCreated,
     components: { AddressForm },
     methods: {
         onSend() {

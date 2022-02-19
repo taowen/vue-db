@@ -1,8 +1,10 @@
 <script lang="ts">
+import { defineComponent } from 'vue';
 import * as vdb from 'vue-db';
 import CounterBox from './CounterBox.vue';
 
-export default vdb.defineComponent({
+export default defineComponent({
+    created: vdb.onCreated,
     computed: {
         displayBack() {
             const counter = vdb.load(CounterBox, { $root: vdb.pageOf(this) })?.count || 0;

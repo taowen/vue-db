@@ -1,10 +1,12 @@
 <script lang="ts">
+import { defineComponent } from "vue";
 import * as vdb from "vue-db";
-import SelectField from './SelectField.vue';
-import InputField from './InputField.vue';
 import { dumpForm } from './dumpForm';
+import InputField from './InputField.vue';
+import SelectField from './SelectField.vue';
 
-export default vdb.defineComponent({
+export default defineComponent({
+    created: vdb.onCreated,
     components: { SelectField, InputField },
     props: {
         name: {

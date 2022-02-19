@@ -1,8 +1,10 @@
 <script lang="ts">
+import { defineComponent } from "vue";
 import * as vdb from "vue-db";
 import InputField from "./InputField.vue";
 
-export default vdb.defineComponent({
+export default defineComponent({
+    created: vdb.onCreated,
     components: { InputField },
     computed: {
         username() {
