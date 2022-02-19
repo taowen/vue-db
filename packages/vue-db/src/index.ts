@@ -84,19 +84,18 @@ export class ComponentHelper {
     }
 }
 
-export function dumpForm(proxy: any) {
+export function dumpForm(proxy: any, form?: Record<string, any>) {
     const node: ComponentInternalInstance = proxy.$;
     if (!node) {
         throw new Error('dumpForm should be called from vue component method with this as argument');
     }
-    const form = {} as Record<string, any>;
-    dumpComponentVNode(form, node);
+    dumpComponent(form || {}, node);
     return form;
 }
 
 function dumpVNode(form: Record<string, any>, node: VNode) {
     if (node.component) {
-        dumpComponentVNode(form, node.component);
+        dumpComponent(form, node.component);
     } else if (Array.isArray(node.children)) {
         for (const child of node.children) {
             if (isVNode(child)) {
@@ -106,7 +105,7 @@ function dumpVNode(form: Record<string, any>, node: VNode) {
     }
 }
 
-function dumpComponentVNode(form: Record<string, any>, node: ComponentInternalInstance) {
+function dumpComponent(form: Record<string, any>, node: ComponentInternalInstance) {
     const proxy = node.proxy as any;
     if (proxy.fillForm) {
         proxy.fillForm(form);
