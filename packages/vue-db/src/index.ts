@@ -21,6 +21,7 @@ export function defineComponent<T>(tableClass: { new($: ComponentHelper, props?:
     }
     const componentType = vueDefineComponent({
         setup(props, ctx) {
+            // trigger helper.query who queried this component type to recompute
             componentType.instanceCount.value++;
             return { self: new tableClass(new ComponentHelper(), props, ctx) }
         },
@@ -50,7 +51,8 @@ export class ComponentHelper {
         if (!componentType.instanceCount) {
             throw new Error(`${componentType} is not defined by vue-db.defineComponent`);
         }
-        // will recompute when new instance created
+        // will recompute when new instance created, 
+        // so we can reference a component instance event it has not been created yet
         componentType.instanceCount.value;
         const filtered = [];
         for (const comp of this.currentInstance.root.subTree.children as any) {
