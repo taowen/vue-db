@@ -1,75 +1,57 @@
-import { Component, ComponentInternalInstance, defineComponent as vueDefineComponent, getCurrentInstance, isVNode, Ref, ref, VNode } from 'vue';
+import { ComponentInternalInstance, ComponentOptionsMixin, ComponentOptionsWithArrayProps, ComponentOptionsWithObjectProps, ComponentOptionsWithoutProps, ComponentPropsOptions, ComputedOptions, DefineComponent, defineComponent as vueDefineComponent, EmitsOptions, isVNode, MethodOptions, Ref, ref, VNode } from 'vue';
 
-type FunctionsOf<T> = {
-    [P in keyof T]: T[P] extends Function ? T[P] : never;
-};
+export function defineComponent<Props = {}, RawBindings = {}, D = {}, C extends ComputedOptions = {}, M extends MethodOptions = {}, Mixin extends ComponentOptionsMixin = ComponentOptionsMixin, Extends extends ComponentOptionsMixin = ComponentOptionsMixin, E extends EmitsOptions = EmitsOptions, EE extends string = string>(options: ComponentOptionsWithoutProps<Props, RawBindings, D, C, M, Mixin, Extends, E, EE>): DefineComponent<Props, RawBindings, D, C, M, Mixin, Extends, E, EE>;
 
-export function defineComponent<T>(options: {
-    components?: Record<string, Component>
-    props?: (keyof T)[],
-}, bizClass: { new(): T }) {
-    const methods: any = {};
-    const computed: any = {};
-    for (const k of Object.getOwnPropertyNames(bizClass.prototype)) {
-        const propDesc = Object.getOwnPropertyDescriptor(bizClass.prototype, k);
-        const isGetter = propDesc?.get;
-        if (isGetter) {
-            computed[k] = propDesc.get;
-        } else {
-            const v = bizClass.prototype[k] as Function;
-            methods[k] = function (this: any, ...args: any[]) {
-                return v.apply(this, args);
-            }
+export function defineComponent<PropNames extends string, RawBindings, D, C extends ComputedOptions = {}, M extends MethodOptions = {}, Mixin extends ComponentOptionsMixin = ComponentOptionsMixin, Extends extends ComponentOptionsMixin = ComponentOptionsMixin, E extends EmitsOptions = Record<string, any>, EE extends string = string>(options: ComponentOptionsWithArrayProps<PropNames, RawBindings, D, C, M, Mixin, Extends, E, EE>): DefineComponent<Readonly<{
+    [key in PropNames]?: any;
+}>, RawBindings, D, C, M, Mixin, Extends, E, EE>;
+
+export function defineComponent<PropsOptions extends Readonly<ComponentPropsOptions>, RawBindings, D, C extends ComputedOptions = {}, M extends MethodOptions = {}, Mixin extends ComponentOptionsMixin = ComponentOptionsMixin, Extends extends ComponentOptionsMixin = ComponentOptionsMixin, E extends EmitsOptions = Record<string, any>, EE extends string = string>(options: ComponentOptionsWithObjectProps<PropsOptions, RawBindings, D, C, M, Mixin, Extends, E, EE>): DefineComponent<PropsOptions, RawBindings, D, C, M, Mixin, Extends, E, EE>;
+
+export function defineComponent(options: any) {
+    const oldSetup = options.setup;
+    options.setup = function (...args: any[]) {
+        // trigger helper.query who queried this component type to recompute
+        componentType.instanceCount.value++;
+        if (oldSetup) {
+            oldSetup.apply(this, args);
         }
     }
-    const props: Record<string, any> = {};
-    const propDefaults = new bizClass();
-    for (const propName of options?.props || []) {
-        props[propName as string] = {
-            default: propDefaults[propName]
-        }
-    }
-    const componentType = vueDefineComponent({
-        components: options?.components,
-        props,
-        setup(props, ctx) {
-            // trigger helper.query who queried this component type to recompute
-            componentType.instanceCount.value++;
-            const self = new bizClass() as any;
-            if (self.setup) {
-                self.setup(props, ctx);
-            }
-            return { self }
-        },
-        data(): T {
-            const data = { ...this.self };
-            for (const propName of options?.props || []) {
-                delete data[propName];
-            }
-            return data;
-        },
-        computed: computed as undefined,
-        methods: methods as FunctionsOf<T>
-    })
+    const componentType = vueDefineComponent(options);
     componentType.instanceCount = ref(0);
     return componentType;
+};
+
+type C = { data?: (...args: any[]) => any, methods?: any, instanceCount?: Ref<number> };
+
+export function load<T extends C>(componentType: T, criteria: Record<string, any>) {
+    const item = query(componentType, criteria)[0];
+    return item;
 }
 
-export function load<T extends { methods?: any, instanceCount?: Ref<number> }>(proxy: any, componentType: T, criteria?: Record<string, any>): T['methods'] {
-    assertProxy(proxy);
-    return query(proxy, componentType, criteria)[0];
+export function pageOf(proxy: any) {
+    return proxy.$.root.proxy;
 }
 
-export function query<T extends { methods?: any, instanceCount?: Ref<number> }>(proxy: any, componentType: T, criteria?: Record<string, any>): T['methods'][] {
-    assertProxy(proxy);
+export function query<T extends C>(componentType: T, criteria: Record<string, any>): (T['methods'] & ReturnType<NonNullable<T['data']>>)[] {
     if (!componentType.instanceCount) {
         throw new Error(`${componentType} is not defined by vue-db.defineComponent`);
     }
     // will recompute when new instance created, 
     // so we can reference a component instance event it has not been created yet
     componentType.instanceCount.value;
-    const result = [];
-    _query(result, proxy.$.root.subTree, componentType, criteria);
+    const result: any[] = [];
+    // search components within the whole page by default
+    let root = undefined;
+    if (criteria.$parent) {
+        root = criteria.$parent.$.subTree;
+    } else if (criteria.$root) {
+        root = criteria.$root.$.subTree;
+        delete criteria.$root;
+    } else {
+        throw new Error(`must provide $parent or $root`);
+    }
+    _query(result, root, componentType, criteria);
     return result as any;
 }
 
@@ -96,44 +78,41 @@ function checkCriteria(proxy: any, criteria?: Record<string, any>) {
         return true;
     }
     for (const [k, v] of Object.entries(criteria)) {
-        if (proxy[k] !== v) {
-            return false;
+        if (k === '$parent') {
+            if (proxy.$.parent.proxy !== v) {
+                return false;
+            }
+        } else {
+            if (proxy[k] !== v) {
+                return false;
+            }
         }
     }
     return true;
 }
 
-export function dumpForm(proxy: any, form?: Record<string, any>) {
-    assertProxy(proxy);
+export function walk(proxy: any, method: string, ...args: any[]) {
     const node: ComponentInternalInstance = proxy.$;
-    form = form || {};
-    dumpComponent(form, node);
-    return form;
+    walkComponent(true, method, args, node);
 }
 
-function assertProxy(proxy: any) {
-    if (!proxy.$) {
-        throw new Error('first argument should be "this"');
-    }
-}
-
-function dumpVNode(form: Record<string, any>, node: VNode) {
+function walkVNode(method:string, args: any[], node: VNode) {
     if (node.component) {
-        dumpComponent(form, node.component);
+        walkComponent(false, method, args, node.component);
     } else if (Array.isArray(node.children)) {
         for (const child of node.children) {
             if (isVNode(child)) {
-                dumpVNode(form, child);
+                walkVNode(method, args, child);
             }
         }
     }
 }
 
-function dumpComponent(form: Record<string, any>, node: ComponentInternalInstance) {
+function walkComponent(isRoot: boolean, method:string, args: any[], node: ComponentInternalInstance) {
     const proxy = node.proxy as any;
-    if (proxy.fillForm) {
-        proxy.fillForm(form);
+    if (!isRoot && proxy[method]) {
+        proxy[method].apply(proxy, args);
     } else {
-        dumpVNode(form, node.subTree);
+        walkVNode(method, args, node.subTree);
     }
 }

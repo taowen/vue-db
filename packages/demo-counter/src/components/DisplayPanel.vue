@@ -2,10 +2,12 @@
 import * as vdb from 'vue-db';
 import CounterBox from './CounterBox.vue';
 
-export default vdb.defineComponent({}, class {
-    get displayBack() {
-        const counter = vdb.load(this, CounterBox)?.count || 0;
-        return counter + 20;
+export default vdb.defineComponent({
+    computed: {
+        displayBack() {
+            const counter = vdb.load(CounterBox, { $root: vdb.pageOf(this) })?.count || 0;
+            return counter + 20;
+        }
     }
 })
 </script>

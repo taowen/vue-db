@@ -4,15 +4,20 @@ import { defineComponent } from 'vue-db';
 let counter = 1;
 
 export default defineComponent({
-    props: ['name', 'label', 'type']
-}, class {
-    name = '';
-    label = '';
-    type = 'text';
-    inputId = `input${counter++}`;
-    value = null as any;
-    fillForm(form: Record<string, any>) {
-        form[this.name] = this.value;
+    props: {
+        name: { required: true, type: String },
+        label: { default: '' },
+        type: { default: 'text' }
+    },
+    data() {
+        return {
+            inputId: `input${counter++}`,
+            value: ''
+        }
+    }, methods: {
+        fillForm(form: Record<string, any>) {
+            form[this.name] = this.value;
+        }
     }
 })
 </script>

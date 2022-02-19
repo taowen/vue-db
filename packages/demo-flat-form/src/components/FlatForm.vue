@@ -2,15 +2,21 @@
 import * as vdb from "vue-db";
 import InputField from "./InputField.vue";
 
-export default vdb.defineComponent({ components: { InputField } }, class { 
-    get username() {
-        return vdb.load(this, InputField, { name: 'username' })?.value;
-    }
-    get hobby() {
-        return vdb.load(this, InputField, { name: 'hobby' })?.value;
-    }
-    onSubmit() {
-        console.log('!!! submit', vdb.dumpForm(this));
+export default vdb.defineComponent({
+    components: { InputField },
+    computed: {
+        username() {
+            return vdb.load(InputField, { $parent: this, name: 'username' })?.value;
+        },
+        hobby() {
+            return vdb.load(InputField, { $parent: this, name: 'hobby' })?.value;
+        }
+    }, methods: {
+        onSubmit() {
+            const form = {};
+            vdb.walk(this, 'fillForm', form);
+            console.log('!!! submit', form);
+        }
     }
 });
 </script>
@@ -20,7 +26,7 @@ export default vdb.defineComponent({ components: { InputField } }, class {
             <InputField label="User Name:" name="username" />
             <InputField label="Hobby:" name="hobby" />
             <button type="submit" @click.prevent="onSubmit">submit</button>
-            hello {{ username || '[username]' }}, who likes {{ hobby || '[hobby]'}}
+            hello {{ username || '[username]' }}, who likes {{ hobby || '[hobby]' }}
         </fieldset>
     </form>
 </template>
