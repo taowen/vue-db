@@ -5,9 +5,9 @@ import DisplayPanel from './components/DisplayPanel.vue'
 </script>
 
 <template>
+  <DisplayPanel />
   <CounterBox />
   <PlusButton />
-  <DisplayPanel />
 </template>
 
 <style>

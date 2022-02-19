@@ -1,4 +1,4 @@
-import { defineComponent as vueDefineComponent, getCurrentInstance } from 'vue';
+import { defineComponent as vueDefineComponent, getCurrentInstance, Ref, ref } from 'vue';
 
 type FunctionsOf<T> = {
     [P in keyof T]: T[P] extends Function ? T[P] : never;
@@ -19,8 +19,9 @@ export function defineComponent<T>(tableClass: { new($: ComponentHelper, props?:
             }
         }
     }
-    return vueDefineComponent({
+    const componentType = vueDefineComponent({
         setup(props, ctx) {
+            componentType.instanceCount.value++;
             return { self: new tableClass(new ComponentHelper(), props, ctx) }
         },
         data(): T {
@@ -29,6 +30,8 @@ export function defineComponent<T>(tableClass: { new($: ComponentHelper, props?:
         computed: computed as undefined,
         methods: methods as FunctionsOf<T>
     })
+    componentType.instanceCount = ref(0);
+    return componentType;
 }
 
 export class ComponentHelper {
@@ -39,11 +42,16 @@ export class ComponentHelper {
         this.currentInstance = getCurrentInstance();
     }
     
-    load<T extends { methods?: any }>(componentType: T): T['methods'] {
+    load<T extends { methods?: any, instanceCount?: Ref<number> }>(componentType: T): T['methods'] {
         return this.query(componentType)[0];
     }
 
-    query<T extends { methods?: any }>(componentType: T): T['methods'][] {
+    query<T extends { methods?: any, instanceCount?: Ref<number> }>(componentType: T): T['methods'][] {
+        if (!componentType.instanceCount) {
+            throw new Error(`${componentType} is not defined by vue-db.defineComponent`);
+        }
+        // will recompute when new instance created
+        componentType.instanceCount.value;
         const filtered = [];
         for (const comp of this.currentInstance.root.subTree.children as any) {
             if (comp.type === componentType && comp.component) {
