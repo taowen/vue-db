@@ -14,6 +14,7 @@ export function register(proxy: any): void {
 }
 
 type C = { data?: (...args: any[]) => any, methods?: any, instanceCount?: Ref<number> };
+type P<T extends C> = (T['methods'] & ReturnType<NonNullable<T['data']>>)
 
 export function load<T extends C>(componentType: T, criteria: Record<string, any>) {
     const item = query(componentType, criteria)[0];
@@ -31,7 +32,7 @@ function getPageRoot(node: ComponentInternalInstance): ComponentInternalInstance
     return getPageRoot(node.parent);
 }
 
-export function query<T extends C>(componentType: T, criteria: Record<string, any>): (T['methods'] & ReturnType<NonNullable<T['data']>>)[] {
+export function query<T extends C>(componentType: T, criteria: Record<string, any>): P<T>[] {
     if (!componentType.instanceCount) {
         componentType.instanceCount = ref(0);
     }
@@ -113,4 +114,14 @@ function walkComponent(isRoot: boolean, method: string, args: any[], node: Compo
     } else {
         walkVNode(method, args, node.subTree);
     }
+}
+
+export function waitNextTick(proxy: any) {
+    return new Promise<void>(resolve => {
+        proxy.$nextTick(resolve);
+    });
+}
+
+export function castTo<T extends C>(proxy: any, componentType: T): P<T> {
+    return proxy;
 }

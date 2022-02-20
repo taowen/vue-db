@@ -7,7 +7,6 @@ export default defineComponent({
     created: vdb.onCreated,
     computed: {
         displayBack() {
-            console.log(vdb.query(CounterBox, { $root: vdb.pageOf(this) }).length)
             const counter = vdb.load(CounterBox, { $root: vdb.pageOf(this) })?.count || 0;
             return counter + 20;
         }

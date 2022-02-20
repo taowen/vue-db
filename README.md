@@ -22,6 +22,7 @@ Checkout following examples
 | [counter](./packages/demo-counter/) | `vdb.load` with $root from current page |
 | [flat form](./packages/demo-flat-form) | `vdb.walk` to dump form state |
 | [nested form](./packages/demo-nestd-form) | `vdb.load` with $parent allowing multiple form instances |
+| [todo list](./packages/demo-todo-local/) | `vdb.waitNextTick` to add new todo item |
 
 ## Async data binding
 
