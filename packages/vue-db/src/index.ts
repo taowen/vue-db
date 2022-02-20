@@ -123,5 +123,8 @@ export function waitNextTick(proxy: any) {
 }
 
 export function castTo<T extends C>(proxy: any, componentType: T): P<T> {
+    if (proxy.$.type !== componentType) {
+        throw new Error('type mismatch');
+    }
     return proxy;
 }
