@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import NestedForm from './components/NestedForm.vue';
+import NewTodo from './components/NewTodo.vue';
+import TodoList from './components/TodoList.vue';
 </script>
 
 <template>
-<NestedForm/>
+<h1>To-Do List</h1>
+<NewTodo />
+<TodoList />
 </template>
 
 <style>
@@ -14,5 +17,10 @@ import NestedForm from './components/NestedForm.vue';
   text-align: center;
   color: #2c3e50;
   margin-top: 60px;
+  width: 800px;
+  display: flex;
+  flex-direction: column;
+  row-gap: 8px;
+    align-items: flex-start;
 }
 </style>

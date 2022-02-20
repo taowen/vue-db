@@ -1,24 +1,13 @@
-import { ComponentInternalInstance, isVNode, KeepAlive, Ref, ref, VNode } from 'vue';
+import { ComponentInternalInstance, getCurrentInstance, isVNode, KeepAlive, onScopeDispose, Ref, ref, VNode } from 'vue';
 
-export function onCreated(this: any) {
-    register(this);
-}
-
-export function register(proxy: any): void {
-    const componentType = proxy.$.type;
+export function setup(this: any) {
+    const c = getCurrentInstance();
+    const componentType = c.type as any;
     let instanceCount = componentType.instanceCount;
     if (!instanceCount) {
         instanceCount = componentType.instanceCount = ref(0);
     }
     instanceCount.value++;
-}
-
-type C = { data?: (...args: any[]) => any, methods?: any, instanceCount?: Ref<number> };
-type P<T extends C> = (T['methods'] & ReturnType<NonNullable<T['data']>>)
-
-export function load<T extends C>(componentType: T, criteria: Record<string, any>) {
-    const item = query(componentType, criteria)[0];
-    return item;
 }
 
 export function pageOf(proxy: any) {
@@ -32,7 +21,30 @@ function getPageRoot(node: ComponentInternalInstance): ComponentInternalInstance
     return getPageRoot(node.parent);
 }
 
-export function query<T extends C>(componentType: T, criteria: Record<string, any>): P<T>[] {
+type VueComponent = { data?: (...args: any[]) => any, methods?: any, instanceCount?: Ref<number> };
+type AsVueProxy<T extends VueComponent> = (T['methods'] & ReturnType<NonNullable<T['data']>>)
+
+export type Future<T> = { isDone: boolean, result: T }
+
+export function load<T extends VueComponent>(componentType: T, criteria: { $parent: any } & Record<string, any>): AsVueProxy<T>;
+export function load<T extends VueComponent>(componentType: T, criteria: { $root: any } & Record<string, any>): AsVueProxy<T>;
+export function load<T>(resource: Resource<T>, criteria: Record<string, any>): Future<T>;
+export function load(target: any, criteria: Record<string, any>) {
+    if (isResource(target)) {
+        const future = target.query();
+        return { isDone: future.isDone, result: future.result[0] };
+    }
+    return query(target, criteria)[0];
+}
+
+export function query<T extends VueComponent>(componentType: T, criteria: { $parent: any } & Record<string, any>): AsVueProxy<T>[];
+export function query<T extends VueComponent>(componentType: T, criteria: { $root: any } & Record<string, any>): AsVueProxy<T>[];
+export function query<T>(resource: Resource<T>, criteria: Record<string, any>): Future<T[]>;
+export function query(target: any, criteria: Record<string, any>): any {
+    if (isResource(target)) {
+        return target.query();
+    }
+    const componentType = target;
     if (!componentType.instanceCount) {
         componentType.instanceCount = ref(0);
     }
@@ -122,9 +134,61 @@ export function waitNextTick(proxy: any) {
     });
 }
 
-export function castTo<T extends C>(proxy: any, componentType: T): P<T> {
+export function castTo<T extends VueComponent>(proxy: any, componentType: T): AsVueProxy<T> {
     if (proxy.$.type !== componentType) {
         throw new Error('type mismatch');
     }
     return proxy;
+}
+
+export function defineResource<T>(resourceName: string) {
+    return new Resource<T>(resourceName);
+}
+
+function isResource(target: any): target is Resource<any> {
+    if (target.query) {
+        return true;
+    }
+    return false;
+}
+
+const resourceQueries: Record<string, Set<Query>> = {};
+
+class Query {
+    futureRef = ref({ isDone: true, result: [{ id: 'hello', content: 'world' } as any] });
+    async run() {
+    }
+}
+
+export class Resource<T> {
+    constructor(public readonly resourceType: string) {
+    }
+    query(): Future<T[]> {
+        const query = new Query();
+        // only keep track of the query when the component instance is not unmounted
+        (getCurrentInstance() as any).scope.run(() => {
+            let queries = resourceQueries[this.resourceType];
+            if (!queries) {
+                resourceQueries[this.resourceType] = queries = new Set();
+            }
+            queries.add(query);
+            onScopeDispose(() => {
+                queries.delete(query);
+            })
+        });
+        query.run();
+        return query.futureRef.value;
+    }
+}
+
+export function invalidateResourceType(resourceType: string) {
+    // re-run queries
+}
+
+let resourceProvider: (resource: Resource<any>, criteria: Record<string, any>) => Promise<any[]> = () => {
+    throw new Error('must call setResourceProvider before query resource');
+}
+
+export function setResourceProvider(_provider: typeof resourceProvider) {
+    resourceProvider = _provider;
 }
