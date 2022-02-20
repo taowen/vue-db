@@ -9,7 +9,7 @@ importers:
       vite: ^2.8.0
       vue: ^3.2.25
       vue-db: ^0.0.1
-      vue-router: '4'
+      vue-router: ^4.0.12
       vue-tsc: ^0.29.8
     dependencies:
       vue: 3.2.31
@@ -54,6 +54,43 @@ importers:
       typescript: 4.5.5
       vite: 2.8.4
       vue-tsc: 0.29.8_typescript@4.5.5
+
+  packages/demo-todo-client:
+    specifiers:
+      '@vitejs/plugin-vue': ^2.2.0
+      typescript: ^4.5.4
+      vite: ^2.8.0
+      vue: ^3.2.25
+      vue-db: ^0.0.1
+      vue-tsc: ^0.29.8
+    dependencies:
+      vue: 3.2.31
+      vue-db: link:../vue-db
+    devDependencies:
+      '@vitejs/plugin-vue': 2.2.0_vite@2.8.4+vue@3.2.31
+      typescript: 4.5.5
+      vite: 2.8.4
+      vue-tsc: 0.29.8_typescript@4.5.5
+
+  packages/demo-todo-local:
+    specifiers:
+      '@vitejs/plugin-vue': ^2.2.0
+      typescript: ^4.5.4
+      vite: ^2.8.0
+      vue: ^3.2.25
+      vue-db: ^0.0.1
+      vue-tsc: ^0.29.8
+    dependencies:
+      vue: 3.2.31
+      vue-db: link:../vue-db
+    devDependencies:
+      '@vitejs/plugin-vue': 2.2.0_vite@2.8.4+vue@3.2.31
+      typescript: 4.5.5
+      vite: 2.8.4
+      vue-tsc: 0.29.8_typescript@4.5.5
+
+  packages/demo-todo-server:
+    specifiers: {}
 
   packages/vue-db:
     specifiers:

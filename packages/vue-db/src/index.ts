@@ -24,7 +24,7 @@ export function pageOf(proxy: any) {
     return getPageRoot(proxy.$).proxy;
 }
 
-function getPageRoot(node: ComponentInternalInstance) {
+function getPageRoot(node: ComponentInternalInstance): ComponentInternalInstance {
     if (!node.parent || (node.parent.type as any) === KeepAlive) {
         return node;
     }
