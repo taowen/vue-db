@@ -17,12 +17,12 @@ Instead of using https://vuex.vuejs.org/ to hold the state, vue-db use the vue c
 
 Checkout following examples
 
-| example | demo |
+| code | live | demo | 
 | --- | --- |
-| [counter](./packages/demo-counter/) | `vdb.load` with $root from current page |
-| [flat form](./packages/demo-flat-form) | `vdb.walk` to dump form state |
-| [nested form](./packages/demo-nestd-form) | `vdb.load` with $parent allowing multiple form instances |
-| [todo list](./packages/demo-todo-local/) | `vdb.waitNextTick` to add new todo item |
+| [counter](./packages/demo-counter/) | counter | `vdb.load` with $root from current page |
+| [flat form](./packages/demo-flat-form) | flat form | `vdb.walk` to dump form state |
+| [nested form](./packages/demo-nestd-form) | nested form | `vdb.load` with $parent allowing multiple form instances |
+| [todo list](./packages/demo-todo-local/) | todo list | `vdb.waitNextTick` to add new todo item |
 
 ## Async data binding
 
