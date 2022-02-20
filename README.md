@@ -5,7 +5,7 @@ Vue data binding with minimal code. There are two motivations
 * cross component data sync, such as form
 * load data from backend and keeping it up to date
 
-It is a bit controversial to ditch so called `view model` and keeping state directly inside the `view`. "entities should not be multiplied beyond necessity"
+It is a bit controversial to ditch so called `view model` and keeping state directly inside the `view`. "entities should not be multiplied beyond necessity" - occam's razor
 
 ## Form
 
