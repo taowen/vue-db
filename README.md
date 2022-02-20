@@ -18,7 +18,7 @@ Instead of using https://vuex.vuejs.org/ to hold the state, vue-db use the vue c
 Checkout following examples
 
 | code | live | demo | 
-| --- | --- |
+| --- | --- | --- |
 | [counter](./packages/demo-counter/) | counter | `vdb.load` with $root from current page |
 | [flat form](./packages/demo-flat-form) | flat form | `vdb.walk` to dump form state |
 | [nested form](./packages/demo-nestd-form) | nested form | `vdb.load` with $parent allowing multiple form instances |
