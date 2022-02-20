@@ -1,14 +1,16 @@
 <script lang="ts">
-import { defineComponent, effectScope } from 'vue';
+import { defineComponent } from 'vue';
 import * as vdb from 'vue-db';
 import TodoListItem, { ResTodo } from './TodoListItem.vue';
 export default defineComponent({
     setup: vdb.setup,
     components: { TodoListItem },
+    data() {
+        return {
+            todos: vdb.query(ResTodo)
+        }
+    },
     computed: {
-        todos() {
-            return vdb.query(ResTodo, {});
-        },
         completedCount() {
             let count = 0;
             for (const item of vdb.query(TodoListItem, { $parent: this })) {
@@ -22,6 +24,7 @@ export default defineComponent({
 })
 </script>
 <template>
-    {{ completedCount }} out of {{ todos.result.length }} items completed
-    <TodoListItem v-for="todo in todos.result" :key="todo.id" :todo="todo" />
+    {{ completedCount }} out of {{ todos.data.length }} items completed
+    <span v-if="!todos.isDone">loading...</span>
+    <TodoListItem v-for="todo in todos.data" :key="todo.id" :todo="todo" />
 </template>

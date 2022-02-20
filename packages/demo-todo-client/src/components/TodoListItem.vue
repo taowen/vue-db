@@ -1,5 +1,5 @@
 <script lang="ts">
-import { defineComponent } from 'vue';
+import { defineComponent, getCurrentInstance } from 'vue';
 import * as vdb from 'vue-db';
 
 export const ResTodo = vdb.defineResource<{ id: string, content: string }>('todo');
