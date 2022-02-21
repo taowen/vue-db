@@ -1,12 +1,11 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import * as vdb from 'vue-db';
+import type { T_saveTodo } from 'demo-todo-server';
+import { Todo } from './TodoListItem.vue';
 
-type signature = (args: { content: string }) => Promise<void>;
 const rpc = vdb
-    .defineCommand<(() => void)>({ affectedTables: [] }).as('blah')
-    .defineCommand<signature>({ affectedTables: ['todo'] }).as('saveTodo')
-    .defineCommand<(() => void)>({ affectedTables: [] }).as('lalala');
+    .defineCommand<T_saveTodo>({ affectedTables: [Todo.table] }).as('saveTodo');
 
 export default defineComponent({
     data() {

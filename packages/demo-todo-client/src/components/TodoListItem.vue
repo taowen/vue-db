@@ -1,12 +1,11 @@
 <script lang="ts">
+import { T_removeTodo, T_Todo } from 'demo-todo-server';
 import { defineComponent } from 'vue';
 import * as vdb from 'vue-db';
 
-export const Author = vdb.defineResource<{ name: string }>('author');
-export const TodoTag = vdb.defineResource<{ name: string }>('todoTag');
-export const Todo = vdb.defineResource<{ id: string, content: string }>('todo')
-    .load('author', Author, { id: '$parent.authorId'})
-    .query('tags', TodoTag, { todoId: '$parent.id'});
+export const Todo = vdb.defineResource<T_Todo>('todo');
+
+const rpc = vdb.defineCommand<T_removeTodo>({ affectedTables: [Todo.table] }).as('removeTodo');
 
 export default defineComponent({
     props: {
@@ -18,7 +17,8 @@ export default defineComponent({
         return { content: this.todo.content, completed: false }
     },
     methods: {
-        onRemove() {
+        async onRemove() {
+            await rpc.removeTodo({ id: this.todo.id });
         }
     }
 })

@@ -169,14 +169,14 @@ export function castTo<T extends VueComponent>(proxy: any, componentType: T): As
 }
 
 export type defineCommandChain<T> = T & {
-    defineCommand<F>(options: {
+    defineCommand<F extends (args: any) => Promise<any>>(options: {
         command?: string,
         affectedTables: string[],
         timeout?: number
     }): { as<C extends string = ''>(alias: C): defineCommandChain<T & { [P in C]: F }> };
 }
 
-export function defineCommand<F>(this: any, options: {
+export function defineCommand<F extends (args: any) => Promise<any>>(this: any, options: {
     command?: string,
     affectedTables: string[],
     timeout?: number
