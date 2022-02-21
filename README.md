@@ -2,10 +2,10 @@
 
 Vue data binding with minimal code. There are 4 motivations
 
-* load data from backend and keeping it up to date
-* server side rendering (SSR) initial state
 * cross component data sync, such as form
 * javascript based animation without cost of vue reconciliation
+* load data from backend and keeping it up to date
+* server side rendering (SSR) initial state
 
 It is a bit controversial to ditch so called `view model` and keeping state directly inside the `view`. "entities should not be multiplied beyond necessity" - occam's razor
 
@@ -28,11 +28,6 @@ Checkout following examples
 | [nested form](./packages/demo-nestd-form) | nested form | `vdb.load` with $parent allowing multiple form instances |
 | [todo list](./packages/demo-todo-local/) | todo list | `vdb.waitNextTick` to add new todo item |
 
-## Async data binding
-
-Data from backend need to be loaded asynchronously. Instead of using a mutable https://vuex.vuejs.org/ store to hold the backend data, vue-db provides async data binding to bind vue component data with backend table.
-
-TODO
 
 ## Animation
 
@@ -40,3 +35,19 @@ Animate with vue reconciliation is slow. CSS animation is feature limited. There
 vue-db serves as a data binding tool between computed property and DOM element attributes.
 
 TODO
+
+## Async data binding
+
+Data from backend need to be loaded asynchronously. Instead of using a mutable https://vuex.vuejs.org/ store to hold the backend data, vue-db provides async data binding to bind vue component data with backend table.
+
+Checkout following examples 
+
+| code | live | demo |
+| --- | --- | --- |
+| todo [client](./packages/demo-todo-client/) [server](./packages/demo-todo-server/) | todo client server | `vdb.defineResource` and `vdb.defineCommand` to bind with backend data |
+
+## SSR
+
+Fetching initial data for server side rendering is a hard job. vue-db aims to unify SPA and SSR data loading code.
+
+ TODO
