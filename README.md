@@ -1,6 +1,6 @@
 # vue-db
 
-Vue data binding with minimal code. There are 4 motivations
+Vue 3 data binding with minimal code. There are 4 motivations
 
 * cross component data sync, such as form
 * javascript based animation without cost of vue reconciliation

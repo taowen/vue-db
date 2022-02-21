@@ -1,9 +1,14 @@
 {
-    "name": "vue-db",
-    "version": "0.0.1",
-    "description": "vue data binding",
-    "main": "src/index.ts",
-    "dependencies": {
-      "vue": "^3.2.25"
-    }
+  "name": "vue-db",
+  "version": "0.0.1",
+  "description": "vue data binding",
+  "main": "dist/index.js",
+  "browser": "src/index.ts",
+  "typings": "src/index.ts",
+  "dependencies": {
+    "vue": "^3.2.25"
+  },
+  "devDependencies": {
+    "typescript": "^4.5.5"
   }
+}

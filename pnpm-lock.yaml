@@ -72,6 +72,19 @@ importers:
       vite: 2.8.4
       vue-tsc: 0.29.8_typescript@4.5.5
 
+  packages/demo-ssg:
+    specifiers:
+      '@types/node': ^14.14.31
+      typescript: ^4.5.5
+      vue: ^3.2.25
+      vue-db: ^0.0.1
+    dependencies:
+      vue: 3.2.31
+      vue-db: link:../vue-db
+    devDependencies:
+      '@types/node': 14.18.12
+      typescript: 4.5.5
+
   packages/demo-todo-client:
     specifiers:
       '@vitejs/plugin-vue': ^2.2.0
@@ -123,9 +136,12 @@ importers:
 
   packages/vue-db:
     specifiers:
+      typescript: ^4.5.5
       vue: ^3.2.25
     dependencies:
       vue: 3.2.31
+    devDependencies:
+      typescript: 4.5.5
 
 packages:
 
@@ -167,19 +183,19 @@ packages:
     resolution: {integrity: sha512-ALYone6pm6QmwZoAgeyNksccT9Q4AWZQ6PvfwR37GT6r6FWUPguq6sUmNGSMV2Wr761oQoBxwGGa6DR5o1DC9g==}
     dependencies:
       '@types/connect': 3.4.35
-      '@types/node': 14.18.12
+      '@types/node': 17.0.19
     dev: true
 
   /@types/connect/3.4.35:
     resolution: {integrity: sha512-cdeYyv4KWoEgpBISTxWvqYsVy444DOqehiF3fM3ne10AmJ62RSyNkUnxMJXHQWRQQX2eR94m5y1IZyDwBjV9FQ==}
     dependencies:
-      '@types/node': 14.18.12
+      '@types/node': 17.0.19
     dev: true
 
   /@types/express-serve-static-core/4.17.28:
     resolution: {integrity: sha512-P1BJAEAW3E2DJUlkgq4tOL3RyMunoWXqbSCygWo5ZIWTjUgN1YnaXWW4VWl/oc8vs/XoYibEGBKP0uZyF4AHig==}
     dependencies:
-      '@types/node': 14.18.12
+      '@types/node': 17.0.19
       '@types/qs': 6.9.7
       '@types/range-parser': 1.2.4
     dev: true
@@ -201,6 +217,10 @@ packages:
     resolution: {integrity: sha512-q4jlIR71hUpWTnGhXWcakgkZeHa3CCjcQcnuzU8M891BAWA2jHiziiWEPEkdS5pFsz7H9HJiy8BrK7tBRNrY7A==}
     dev: true
 
+  /@types/node/17.0.19:
+    resolution: {integrity: sha512-PfeQhvcMR4cPFVuYfBN4ifG7p9c+Dlh3yUZR6k+5yQK7wX3gDgVxBly4/WkBRs9x4dmcy1TVl08SY67wwtEvmA==}
+    dev: true
+
   /@types/qs/6.9.7:
     resolution: {integrity: sha512-FGa1F62FT09qcrueBA6qYTrJPVDzah9a+493+o2PCXsesWHIn27G98TsSMs3WPNbZIEj4+VJf6saSFpvD+3Zsw==}
     dev: true
@@ -213,7 +233,7 @@ packages:
     resolution: {integrity: sha512-nCkHGI4w7ZgAdNkrEu0bv+4xNV/XDqW+DydknebMOQwkpDGx8G+HTlj7R7ABI8i8nKxVw0wtKPi1D+lPOkh4YQ==}
     dependencies:
       '@types/mime': 1.3.2
-      '@types/node': 14.18.12
+      '@types/node': 17.0.19
     dev: true
 
   /@vitejs/plugin-vue/2.2.0_vite@2.8.4+vue@3.2.31:

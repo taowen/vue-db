@@ -1,4 +1,4 @@
-import { App, ComponentInternalInstance, computed, effect, getCurrentInstance, isVNode, KeepAlive, nextTick, onScopeDispose, readonly, Ref, ref, VNode } from 'vue';
+import { App, ComponentInternalInstance, computed, effect, getCurrentInstance, isRef, isVNode, KeepAlive, nextTick, onScopeDispose, readonly, Ref, ref, VNode } from 'vue';
 
 export type InstallOptions = {
     rpcProvider: (queries: QueryRequest[], command?: CommandRequest) => Promise<void>
@@ -19,6 +19,9 @@ export function install(app: App, options?: InstallOptions) {
                 instanceCount = componentType.instanceCount = ref(0);
             }
             instanceCount.value++;
+        },
+        async serverPrefetch() {
+            await flushing;
         }
     })
     if (options) {
@@ -31,7 +34,7 @@ export function animate(elem: HTMLElement, animatedPropsProvider: () => Record<s
     effect(() => {
         const animatedProps = animatedPropsProvider();
         for (const [k, v] of Object.entries(animatedProps)) {
-            if (typeof v === 'object') {
+            if (typeof v === 'object') { // such as style
                 for (const [k2, v2] of Object.entries(v)) {
                     (elem as any)[k][k2] = v2;
                 }
@@ -232,15 +235,14 @@ function isResource(target: any): target is Resource<any> {
 const tableQueries: Map<string, Set<Query>> = new Map();
 // initial page rendering will batch queries together
 let batchQueries: Query[] = [];
+let flushing: Promise<void> | undefined;
 
-async function flushBatchQueries() {
-    await waitNextTick();
-    const requests = [];
-    for (const query of batchQueries) {
-        requests.push(query.newRequest());
-    }
+async function flushQueries() {
+    await waitNextTick(); // wait for batchQueries to fill up 
+    const requests = batchQueries.map(q => q.newRequest());
     batchQueries = [];
     await rpcProvider(requests);
+    flushing = undefined;
 }
 
 class Query {
@@ -249,7 +251,7 @@ class Query {
     // 2. when async query is done, the result will be updated
     // 3. when criteria changed, query will be re-run, and then the result will be changed
     // 4. when command mutates table data, queries depending on those tables will be re-run
-    public result = ref({ isDone: false, data: [] as any[], error: undefined as any });
+    public result: Ref<{ isDone: boolean, data: any[], error: any }> = ref({ isDone: false, data: [], error: undefined, _query: this });
     public criteria: Record<string, any> = {};
     public version = 0;
 
@@ -261,7 +263,7 @@ class Query {
             }
             batchQueries.push(this);
             if (batchQueries.length === 1) {
-                flushBatchQueries();
+                flushing = flushQueries();
             }
         })
     }
