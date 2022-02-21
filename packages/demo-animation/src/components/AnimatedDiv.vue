@@ -10,9 +10,8 @@ export default defineComponent({
         }
     },
     mounted() {
-        const elem: HTMLElement = this.$refs.myDiv;
         // bind animated props
-        vdb.animate(elem, () => {
+        vdb.animate(this.$refs.myDiv, () => {
             return {
                 style: {
                     left: `${this.left}px`

@@ -34,7 +34,9 @@ Checkout following examples
 Animate with vue reconciliation is slow. CSS animation is feature limited. There are times we need to update the DOM element directly without triggering vue to re-render.
 vue-db serves as a data binding tool between computed property and DOM element attributes.
 
-TODO
+| code | live | demo |
+| --- | --- | --- |
+| [animation](./packages/demo-animation) | animation | `vdb.animate` to bind animated props to html element |
 
 ## Async data binding
 

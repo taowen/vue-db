@@ -26,6 +26,7 @@ export function install(app: App, options?: InstallOptions) {
     }
 }
 
+// bind reactive data directly to html element attributes for animation performance
 export function animate(elem: HTMLElement, animatedPropsProvider: () => Record<string, any>) {
     effect(() => {
         const animatedProps = animatedPropsProvider();
