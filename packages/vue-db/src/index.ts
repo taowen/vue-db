@@ -1,14 +1,15 @@
-import { App, ComponentInternalInstance, computed, effect, getCurrentInstance, isRef, isVNode, KeepAlive, nextTick, onScopeDispose, readonly, Ref, ref, VNode } from 'vue';
+import { App, ComponentInternalInstance, computed, effect, getCurrentInstance, isVNode, KeepAlive, nextTick, onScopeDispose, readonly, Ref, ref, VNode } from 'vue';
 
 export type InstallOptions = {
     rpcProvider: (queries: QueryRequest[], command?: CommandRequest) => Promise<void>
-    defaultQueryTimeout?: number,
-    defaultCommandTimeout?: number,
+    defaultQueryTimeout?: number, // TODO
+    defaultCommandTimeout?: number, // TODO
 }
 
-let rpcProvider: InstallOptions['rpcProvider'] = () => {
-    throw new Error('must call setRpcProvider before query or call');
-}
+let rpcProvider: InstallOptions['rpcProvider'] = () => { throw new Error('must install with rpcProvider before query or call'); }
+const tableQueries: Map<string, Set<Query>> = new Map(); // used by command affectedTables
+let batchQueries: Query[] = []; // initial page rendering will batch queries together
+let flushing: Promise<void> | undefined; // is batchQueries being flushing
 
 export function install(app: App, options?: InstallOptions) {
     app.mixin({
@@ -187,7 +188,7 @@ export type defineCommandChain<T> = T & {
     defineCommand<F extends (args: any) => Promise<any>>(options: {
         command?: string,
         affectedTables: string[],
-        timeout?: number
+        timeout?: number // TODO
     }): { as<C extends string = ''>(alias: C): defineCommandChain<T & { [P in C]: F }> };
 }
 
@@ -220,7 +221,7 @@ export function defineCommand<F extends (args: any) => Promise<any>>(this: any, 
 export function defineResource<T>(table: string, options?: {
     sourceTables?: string[], // if source table changed, queries of this resource will be run again
     staticCriteria?: Record<string, any>, // some part of criteria is not context dependent, we can extract them to here
-    timeout?: number
+    timeout?: number // TODO
 }): Resource<T> {
     return readonly(new Resource<T>(table, options)) as any;
 }
@@ -231,11 +232,6 @@ function isResource(target: any): target is Resource<any> {
     }
     return false;
 }
-
-const tableQueries: Map<string, Set<Query>> = new Map();
-// initial page rendering will batch queries together
-let batchQueries: Query[] = [];
-let flushing: Promise<void> | undefined;
 
 async function flushQueries() {
     await waitNextTick(); // wait for batchQueries to fill up 
