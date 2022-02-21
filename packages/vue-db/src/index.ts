@@ -1,20 +1,16 @@
 import { App, ComponentInternalInstance, computed, effect, getCurrentInstance, isVNode, KeepAlive, nextTick, onScopeDispose, readonly, Ref, ref, VNode } from 'vue';
 
-export type RpcProvider = (queries: QueryRequest[], command?: CommandRequest) => Promise<void>
-
 export type InstallOptions = {
-    rpcProvider: RpcProvider
+    rpcProvider: (queries: QueryRequest[], command?: CommandRequest) => Promise<void>
+    defaultQueryTimeout?: number,
+    defaultCommandTimeout?: number,
 }
 
-let rpcProvider: RpcProvider = () => {
+let rpcProvider: InstallOptions['rpcProvider'] = () => {
     throw new Error('must call setRpcProvider before query or call');
 }
 
-export function install(app: App, options?: {
-    rpcProvider: RpcProvider,
-    defaultQueryTimeout?: number,
-    defaultCommandTimeout?: number,
-}) {
+export function install(app: App, options?: InstallOptions) {
     app.mixin({
         created() {
             const componentType = this.$.type as any;
@@ -28,6 +24,21 @@ export function install(app: App, options?: {
     if (options) {
         rpcProvider = options.rpcProvider;
     }
+}
+
+export function animate(elem: HTMLElement, animatedPropsProvider: () => Record<string, any>) {
+    effect(() => {
+        const animatedProps = animatedPropsProvider();
+        for (const [k, v] of Object.entries(animatedProps)) {
+            if (typeof v === 'object') {
+                for (const [k2, v2] of Object.entries(v)) {
+                    (elem as any)[k][k2] = v2;
+                }
+            } else {
+                (elem as any)[k] = v;
+            }
+        }
+    })
 }
 
 export function pageOf(proxy: any) {
