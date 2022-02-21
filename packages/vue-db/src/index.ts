@@ -188,15 +188,13 @@ export function defineCommand<F extends (args: any) => Promise<any>>(this: any, 
                 const queryRequests = [];
                 for (const affectedTable of options.affectedTables) {
                     const queries = tableQueries.get(affectedTable);
-                    if (queries) {
-                        for (const query of queries) {
-                            queryRequests.push(query.newRequest());
-                        }
+                    for (const query of queries || []) {
+                        queryRequests.push(query.newRequest());
                     }
                 }
                 const command = options.command || alias;
                 const commandRequest = new CommandRequest(command, args);
-                rpc(queryRequests, commandRequest)
+                rpcProvider(queryRequests, commandRequest);
                 return commandRequest.promise;
             };
             return { ...prev, [alias]: stub, defineCommand };
@@ -230,7 +228,7 @@ async function flushBatchQueries() {
         requests.push(query.newRequest());
     }
     batchQueries = [];
-    await rpc(requests);
+    await rpcProvider(requests);
 }
 
 class Query {
@@ -378,10 +376,7 @@ export class QueryRequest {
     }
 
     public toJSON() {
-        return {
-            resource: this.resource,
-            criteria: this.criteria
-        }
+        return { resource: this.resource, criteria: this.criteria }
     }
 }
 
@@ -399,17 +394,6 @@ export class CommandRequest {
     }
 
     public toJSON() {
-        return {
-            command: this.command,
-            args: this.args
-        }
-    }
-}
-
-async function rpc(queries: QueryRequest[], command?: CommandRequest) {
-    try {
-        await rpcProvider(queries, command);
-    } catch (e) {
-        console.error(e);
+        return { command: this.command, args: this.args }
     }
 }
