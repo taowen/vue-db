@@ -1,17 +1,4 @@
-import { ComponentInternalInstance, computed, effect, getCurrentInstance, isVNode, KeepAlive, onScopeDispose, Ref, ref, VNode } from 'vue';
-
-export function setup() {
-    const c = getCurrentInstance();
-    if (!c) {
-        throw new Error('vdb setup not called within vue component setup');
-    }
-    const componentType = c.type as any;
-    let instanceCount = componentType.instanceCount;
-    if (!instanceCount) {
-        instanceCount = componentType.instanceCount = ref(0);
-    }
-    instanceCount.value++;
-}
+import { App, ComponentInternalInstance, computed, effect, getCurrentInstance, isVNode, KeepAlive, nextTick, onScopeDispose, Ref, ref, VNode } from 'vue';
 
 export function pageOf(proxy: any) {
     return getPageRoot(proxy.$).proxy;
@@ -134,10 +121,14 @@ function walkComponent(isRoot: boolean, method: string, args: any[], node: Compo
     }
 }
 
-export function waitNextTick(proxy: any) {
+export function waitNextTick() {
     return new Promise<void>(resolve => {
-        proxy.$nextTick(resolve);
+        nextTick(resolve);
     });
+}
+
+export async function sleep(timeout: number) {
+    return new Promise<void>(resolve => setTimeout(resolve, timeout));
 }
 
 export function castTo<T extends VueComponent>(proxy: any, componentType: T): AsVueProxy<T> {
@@ -147,8 +138,22 @@ export function castTo<T extends VueComponent>(proxy: any, componentType: T): As
     return proxy;
 }
 
-export function defineResource<T>(resourceName: string) {
-    return new Resource<T>(resourceName);
+export function defineCommand<F>(options: {
+    command: string,
+    affectedTables: string[],
+    timeout?: number
+}): F {
+    return (() => {
+        throw new Error('not implemented');
+    }) as any
+}
+
+export function defineResource<T>(table: string, options?: {
+    sourceTables?: string[], // if source table changed, queries of this resource will be run again
+    staticCriteria?: Record<string, any>, // some part of criteria is not context dependent, we can extract them to here
+    timeout?: number
+}) {
+    return new Resource<T>(table, options);
 }
 
 function isResource(target: any): target is Resource<any> {
@@ -158,37 +163,67 @@ function isResource(target: any): target is Resource<any> {
     return false;
 }
 
-const resourceQueries: Record<string, Set<Query>> = {};
+const tableQueries: Record<string, Set<Query>> = {};
+// initial page rendering will batch queries together
+let batchQueries: Query[] = [];
+
+async function flushBatchQueries() {
+    await waitNextTick();
+    const requests = [];
+    for (const query of batchQueries) {
+        requests.push(query.newRequest());
+    }
+    batchQueries = [];
+    await rpc(requests);
+}
 
 class Query {
-    public refFuture = ref({ isDone: false, data: [] as any[], error: undefined as any });
-    private refRerun = ref(0);
+    // query result is a ref so that we can bind data to it
+    // 1. initially it has no data, as async computation takes time
+    // 2. when async query is done, the result will be updated
+    // 3. when criteria changed, query will be re-run, and then the result will be changed
+    // 4. when command mutates table data, queries depending on those tables will be re-run
+    public result = ref({ isDone: false, data: [] as any[], error: undefined as any });
+    public criteria: Record<string, any> = {};
+    public version = 0;
 
-    constructor(resource: Resource<any>, criteria?: () => Record<string, any>) {
-        const refCriteria = computed(criteria || (() => {
-            return {}
-        }));
+    constructor(public resource: Resource<any>, criteriaProvider?: () => Record<string, any>) {
+        // subscribe criteria via effect
         effect(() => {
-            const criteria = refCriteria.value;
-            this.refRerun.value;
-            (async () => {
-                try {
-                    const data = await resourceProvider(resource, criteria);
-                    this.refFuture.value = { isDone: true, data, error: undefined };
-                } catch(e) {
-                    this.refFuture.value = { isDone: true, data: [], error: e };
-                }
-            })();
+            if (criteriaProvider) {
+                this.criteria = criteriaProvider();
+            }
+            batchQueries.push(this);
+            if (batchQueries.length === 1) {
+                flushBatchQueries();
+            }
         })
     }
 
-    run() {
-        this.refRerun.value++;
+    public newRequest() {
+        this.version++;
+        return new QueryRequest(this);
     }
 }
 
 export class Resource<T> {
-    constructor(public readonly resourceType: string) {
+    constructor(public readonly table: string, options?: {
+        sourceTables?: string[],
+        staticCriteria?: Record<string, any>,
+        timeout?: number
+    }) {
+    }
+
+    public load<N extends string, F>(fieldName: N, fieldType: Resource<F>, criteriaSource: Record<string, string>, options?: {
+        staticCriteria?: Record<string, any>,
+    }): Resource<T & { [P in N]: F }> {
+        return this as any;
+    }
+
+    public query<N extends string, F>(fieldName: N, fieldType: Resource<F>, criteriaSource: Record<string, string>, options?: {
+        staticCriteria?: Record<string, any>,
+    }): Resource<T & { [P in N]: F[] }> {
+        return this as any;
     }
 }
 
@@ -196,30 +231,102 @@ function queryResource(resource: Resource<any>, criteria: () => Record<string, a
     const query = new Query(resource, criteria);
     // only keep track of the query when the component instance is not unmounted
     (getCurrentInstance() as any).scope.run(() => {
-        let queries = resourceQueries[resource.resourceType];
+        let queries = tableQueries[resource.table];
         if (!queries) {
-            resourceQueries[resource.resourceType] = queries = new Set();
+            tableQueries[resource.table] = queries = new Set();
         }
         queries.add(query);
         onScopeDispose(() => {
             queries.delete(query);
         })
     });
-    return query.refFuture;
+    return query.result;
 }
 
-export function invalidateResourceType(resourceType: string) {
-    // re-run queries
+export class QueryRequest {
+
+    private baseVersion: number;
+    public criteria: Record<string, any>;
+
+    constructor(private query: Query) {
+        this.baseVersion = query.version;
+        this.criteria = query.criteria;
+    }
+
+    public get resource() {
+        return this.query.resource;
+    }
+
+    // avoid early request override late request
+    private get isExpired() {
+        return this.baseVersion === this.query.version;
+    }
+
+    public resolve(data: any[]) {
+        if (this.isExpired) {
+            return;
+        }
+        this.query.result.value = { isDone: true, data, error: undefined };
+    }
+
+    public reject(error: any) {
+        if (this.isExpired) {
+            return;
+        }
+        this.query.result.value = { isDone: true, data: [], error };
+    }
 }
 
-let resourceProvider: (resource: Resource<any>, criteria: Record<string, any>) => Promise<any[]> = () => {
-    throw new Error('must call setResourceProvider before query resource');
+export class CommandRequest {
+
+    public promise: Promise<any>;
+    public resolve: (result: any) => void = undefined as any;
+    public reject: (error: any) => void = undefined as any;
+
+    constructor(public command: string, public args: Record<string, any>) {
+        this.promise = new Promise<any>((resolve, reject) => {
+            this.resolve = resolve;
+            this.reject = reject;
+        });
+    }
 }
 
-export function setResourceProvider(_provider: typeof resourceProvider) {
-    resourceProvider = _provider;
+async function rpc(queries: QueryRequest[], command?: CommandRequest) {
+    try {
+        await rpcProvider(queries, command);
+    } catch (e) {
+        console.error(e);
+    }
 }
 
-export async function sleep(timeout: number) {
-    return new Promise<void>(resolve => setTimeout(resolve, timeout));
+export type RpcProvider = (queries: QueryRequest[], command?: CommandRequest) => Promise<void>
+
+export type InstallOptions = {
+    rpcProvider: RpcProvider
+}
+
+let rpcProvider: RpcProvider = () => {
+    throw new Error('must call setRpcProvider before query or call');
+}
+
+export function install(app: App, options: {
+    rpcProvider: RpcProvider,
+    defaultQueryTimeout?: number,
+    defaultCommandTimeout?: number,
+}) {
+    app.mixin({
+        setup() {
+            const c = getCurrentInstance();
+            if (!c) {
+                throw new Error('vdb setup not called within vue component setup');
+            }
+            const componentType = c.type as any;
+            let instanceCount = componentType.instanceCount;
+            if (!instanceCount) {
+                instanceCount = componentType.instanceCount = ref(0);
+            }
+            instanceCount.value++;
+        }
+    })
+    rpcProvider = options.rpcProvider;
 }

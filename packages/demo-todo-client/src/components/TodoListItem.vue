@@ -1,11 +1,14 @@
 <script lang="ts">
-import { defineComponent, getCurrentInstance } from 'vue';
+import { defineComponent } from 'vue';
 import * as vdb from 'vue-db';
 
-export const ResTodo = vdb.defineResource<{ id: string, content: string }>('todo');
+export const Author = vdb.defineResource<{ name: string }>('author');
+export const TodoTag = vdb.defineResource<{ name: string }>('todoTag');
+export const ResTodo = vdb.defineResource<{ id: string, content: string }>('todo')
+    .load('author', Author, { id: '$parent.authorId'})
+    .query('tags', TodoTag, { todoId: '$parent.id'});
 
 export default defineComponent({
-    setup: vdb.setup,
     props: {
         todo: {
             default: undefined as any as { id: string, content: string }
