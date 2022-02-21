@@ -1,4 +1,3 @@
-export * from './biz';
 export function start() {
-    
+    console.log('hello');
 }

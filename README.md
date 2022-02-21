@@ -1,9 +1,10 @@
 # vue-db
 
-Vue data binding with minimal code. There are 3 motivations
+Vue data binding with minimal code. There are 4 motivations
 
-* cross component data sync, such as form
 * load data from backend and keeping it up to date
+* server side rendering (SSR) initial state
+* cross component data sync, such as form
 * javascript based animation without cost of vue reconciliation
 
 It is a bit controversial to ditch so called `view model` and keeping state directly inside the `view`. "entities should not be multiplied beyond necessity" - occam's razor
