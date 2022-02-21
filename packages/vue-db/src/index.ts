@@ -1,5 +1,35 @@
 import { App, ComponentInternalInstance, computed, effect, getCurrentInstance, isVNode, KeepAlive, nextTick, onScopeDispose, Ref, ref, VNode } from 'vue';
 
+export type RpcProvider = (queries: QueryRequest[], command?: CommandRequest) => Promise<void>
+
+export type InstallOptions = {
+    rpcProvider: RpcProvider
+}
+
+let rpcProvider: RpcProvider = () => {
+    throw new Error('must call setRpcProvider before query or call');
+}
+
+export function install(app: App, options?: {
+    rpcProvider: RpcProvider,
+    defaultQueryTimeout?: number,
+    defaultCommandTimeout?: number,
+}) {
+    app.mixin({
+        created() {
+            const componentType = this.$.type as any;
+            let instanceCount = componentType.instanceCount;
+            if (!instanceCount) {
+                instanceCount = componentType.instanceCount = ref(0);
+            }
+            instanceCount.value++;
+        }
+    })
+    if (options) {
+        rpcProvider = options.rpcProvider;
+    }
+}
+
 export function pageOf(proxy: any) {
     return getPageRoot(proxy.$).proxy;
 }
@@ -207,23 +237,30 @@ class Query {
 }
 
 export class Resource<T> {
-    constructor(public readonly table: string, options?: {
+    constructor(public readonly table: string, private options?: {
         sourceTables?: string[],
         staticCriteria?: Record<string, any>,
         timeout?: number
     }) {
     }
 
-    public load<N extends string, F>(fieldName: N, fieldType: Resource<F>, criteriaSource: Record<string, string>, options?: {
+    public load<N extends string, F>(fieldName: N, fieldType: Resource<F>, dynamicCriteria: Record<string, string>, options?: {
         staticCriteria?: Record<string, any>,
     }): Resource<T & { [P in N]: F }> {
         return this as any;
     }
 
-    public query<N extends string, F>(fieldName: N, fieldType: Resource<F>, criteriaSource: Record<string, string>, options?: {
+    public query<N extends string, F>(fieldName: N, fieldType: Resource<F>, dynamicCriteria: Record<string, string>, options?: {
         staticCriteria?: Record<string, any>,
     }): Resource<T & { [P in N]: F[] }> {
         return this as any;
+    }
+
+    public toJSON() {
+        return {
+            table: this.table,
+            staticCriteria: this.options?.staticCriteria
+        }
     }
 }
 
@@ -259,7 +296,7 @@ export class QueryRequest {
 
     // avoid early request override late request
     private get isExpired() {
-        return this.baseVersion === this.query.version;
+        return this.baseVersion !== this.query.version;
     }
 
     public resolve(data: any[]) {
@@ -275,6 +312,13 @@ export class QueryRequest {
         }
         this.query.result.value = { isDone: true, data: [], error };
     }
+
+    public toJSON() {
+        return {
+            resource: this.resource,
+            criteria: this.criteria
+        }
+    }
 }
 
 export class CommandRequest {
@@ -289,6 +333,13 @@ export class CommandRequest {
             this.reject = reject;
         });
     }
+
+    public toJSON() {
+        return {
+            command: this.command,
+            args: this.args
+        }
+    }
 }
 
 async function rpc(queries: QueryRequest[], command?: CommandRequest) {
@@ -296,35 +347,5 @@ async function rpc(queries: QueryRequest[], command?: CommandRequest) {
         await rpcProvider(queries, command);
     } catch (e) {
         console.error(e);
-    }
-}
-
-export type RpcProvider = (queries: QueryRequest[], command?: CommandRequest) => Promise<void>
-
-export type InstallOptions = {
-    rpcProvider: RpcProvider
-}
-
-let rpcProvider: RpcProvider = () => {
-    throw new Error('must call setRpcProvider before query or call');
-}
-
-export function install(app: App, options?: {
-    rpcProvider: RpcProvider,
-    defaultQueryTimeout?: number,
-    defaultCommandTimeout?: number,
-}) {
-    app.mixin({
-        created() {
-            const componentType = this.$.type as any;
-            let instanceCount = componentType.instanceCount;
-            if (!instanceCount) {
-                instanceCount = componentType.instanceCount = ref(0);
-            }
-            instanceCount.value++;
-        }
-    })
-    if (options) {
-        rpcProvider = options.rpcProvider;
     }
 }

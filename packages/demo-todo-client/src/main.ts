@@ -5,8 +5,10 @@ import App from './App.vue';
 export const app = createApp(App);
 app.use(vdb, {
     rpcProvider: async (queries, command) => {
+        console.log(JSON.stringify(queries));
+        await vdb.sleep(1000);
         for (const query of queries) {
-            query.resolve(['world'])
+            query.resolve([{ content: 'world' }])
         }
     }
 } as vdb.InstallOptions);
