@@ -4,7 +4,6 @@ import * as vdb from "vue-db";
 import InputField from "./InputField.vue";
 
 export default defineComponent({
-    created: vdb.onCreated,
     components: { InputField },
     computed: {
         username() {

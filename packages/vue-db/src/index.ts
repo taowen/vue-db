@@ -309,14 +309,14 @@ let rpcProvider: RpcProvider = () => {
     throw new Error('must call setRpcProvider before query or call');
 }
 
-export function install(app: App, options: {
+export function install(app: App, options?: {
     rpcProvider: RpcProvider,
     defaultQueryTimeout?: number,
     defaultCommandTimeout?: number,
 }) {
     app.mixin({
-        setup() {
-            const componentType = getCurrentInstance()!.type as any;
+        created() {
+            const componentType = this.$.type as any;
             let instanceCount = componentType.instanceCount;
             if (!instanceCount) {
                 instanceCount = componentType.instanceCount = ref(0);
@@ -324,5 +324,7 @@ export function install(app: App, options: {
             instanceCount.value++;
         }
     })
-    rpcProvider = options.rpcProvider;
+    if (options) {
+        rpcProvider = options.rpcProvider;
+    }
 }

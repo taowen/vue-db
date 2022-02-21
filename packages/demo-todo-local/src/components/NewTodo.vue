@@ -3,7 +3,6 @@ import { defineComponent } from 'vue';
 import * as vdb from 'vue-db';
 import TodoList from './TodoList.vue';
 export default defineComponent({
-    created: vdb.onCreated,
     data() {
         return {
             content: ''

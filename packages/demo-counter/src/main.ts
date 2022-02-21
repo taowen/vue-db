@@ -2,6 +2,7 @@ import { createApp } from 'vue';
 import * as VueRouter from 'vue-router';
 import CounterPage from './components/CounterPage.vue';
 import App from './App.vue';
+import * as vdb from 'vue-db';
 
 const routes = [
     {
@@ -20,4 +21,5 @@ const router = VueRouter.createRouter({
 })
 export const app = createApp(App);
 app.use(router);
+app.use(vdb);
 app.mount('#app')

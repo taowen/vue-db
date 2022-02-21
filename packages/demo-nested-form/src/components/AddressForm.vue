@@ -6,7 +6,6 @@ import InputField from './InputField.vue';
 import SelectField from './SelectField.vue';
 
 export default defineComponent({
-    created: vdb.onCreated,
     components: { SelectField, InputField },
     props: {
         name: {
