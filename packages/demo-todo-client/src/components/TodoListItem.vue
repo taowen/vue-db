@@ -4,7 +4,7 @@ import * as vdb from 'vue-db';
 
 export const Author = vdb.defineResource<{ name: string }>('author');
 export const TodoTag = vdb.defineResource<{ name: string }>('todoTag');
-export const ResTodo = vdb.defineResource<{ id: string, content: string }>('todo')
+export const Todo = vdb.defineResource<{ id: string, content: string }>('todo')
     .load('author', Author, { id: '$parent.authorId'})
     .query('tags', TodoTag, { todoId: '$parent.id'});
 

@@ -237,6 +237,15 @@ class Query {
 }
 
 export class Resource<T> {
+    
+    public pickedFields?: string[];
+    public subResources: Record<string, {
+        single?: boolean, // true for load, false for query
+        resource: Resource<any>,
+        dynamicCriteria: Record<string, string>,
+        staticCriteria?: Record<string, any>
+    }> = {}
+
     constructor(public readonly table: string, private options?: {
         sourceTables?: string[],
         staticCriteria?: Record<string, any>,
@@ -244,22 +253,41 @@ export class Resource<T> {
     }) {
     }
 
+    public pick<N1 extends keyof T>(n1: N1): Resource<Pick<T, N1>>
+    public pick<N1 extends keyof T, N2 extends keyof T>(n1: N1, n2: N2): Resource<Pick<T, N1 | N2>>
+    public pick(...pickedFields: string[]): Resource<T> {
+        this.pickedFields = pickedFields;
+        return this;
+    }
+
     public load<N extends string, F>(fieldName: N, fieldType: Resource<F>, dynamicCriteria: Record<string, string>, options?: {
         staticCriteria?: Record<string, any>,
     }): Resource<T & { [P in N]: F }> {
+        this.subResources[fieldName] = {
+            single: true,
+            resource: fieldType,
+            dynamicCriteria,
+            staticCriteria: options?.staticCriteria
+        }
         return this as any;
     }
 
     public query<N extends string, F>(fieldName: N, fieldType: Resource<F>, dynamicCriteria: Record<string, string>, options?: {
         staticCriteria?: Record<string, any>,
     }): Resource<T & { [P in N]: F[] }> {
+        this.subResources[fieldName] = {
+            resource: fieldType,
+            dynamicCriteria,
+            staticCriteria: options?.staticCriteria
+        }
         return this as any;
     }
 
     public toJSON() {
         return {
             table: this.table,
-            staticCriteria: this.options?.staticCriteria
+            staticCriteria: this.options?.staticCriteria,
+            subResources: Object.keys(this.subResources).length === 0 ? undefined : this.subResources
         }
     }
 }

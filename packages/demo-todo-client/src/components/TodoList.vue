@@ -1,12 +1,12 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import * as vdb from 'vue-db';
-import TodoListItem, { ResTodo } from './TodoListItem.vue';
+import TodoListItem, { Todo } from './TodoListItem.vue';
 export default defineComponent({
     components: { TodoListItem },
     data() {
         return {
-            todos: vdb.query(ResTodo)
+            todos: vdb.query(Todo)
         }
     },
     computed: {
