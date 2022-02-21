@@ -1,5 +1,11 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
+import * as vdb from 'vue-db';
+
+const saveTodo = vdb.defineCommand<((args: { content: string }) => Promise<void>)>({ 
+    command: 'saveTodo', 
+    affectedTables: ['todo']});
+
 export default defineComponent({
     data() {
         return {
@@ -11,6 +17,7 @@ export default defineComponent({
             if (!this.content) {
                 return;
             }
+            await saveTodo({ content: this.content });        
             this.content = '';
         }
     }

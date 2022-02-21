@@ -173,8 +173,19 @@ export function defineCommand<F>(options: {
     affectedTables: string[],
     timeout?: number
 }): F {
-    return (() => {
-        throw new Error('not implemented');
+    return ((args: Record<string, any>) => {
+        const queryRequests = [];
+        for (const affectedTable of options.affectedTables) {
+            const queries = tableQueries.get(affectedTable);
+            if (queries) {
+                for (const query of queries) {
+                    queryRequests.push(query.newRequest());
+                }
+            }
+        }
+        const commandRequest = new CommandRequest(options.command, args);
+        rpc(queryRequests, commandRequest)
+        return commandRequest.promise;
     }) as any
 }
 
@@ -193,7 +204,7 @@ function isResource(target: any): target is Resource<any> {
     return false;
 }
 
-const tableQueries: Record<string, Set<Query>> = {};
+const tableQueries: Map<string, Set<Query>> = new Map();
 // initial page rendering will batch queries together
 let batchQueries: Query[] = [];
 
@@ -237,7 +248,7 @@ class Query {
 }
 
 export class Resource<T> {
-    
+
     public pickedFields?: string[];
     public subResources: Record<string, {
         single?: boolean, // true for load, false for query
@@ -256,7 +267,7 @@ export class Resource<T> {
     private clone() {
         const newResource = new Resource(this.table, this.options);
         newResource.pickedFields = this.pickedFields;
-        newResource.subResources = {...this.subResources};
+        newResource.subResources = { ...this.subResources };
         return newResource;
     }
 
@@ -306,13 +317,13 @@ function queryResource(resource: Resource<any>, criteria: () => Record<string, a
     const query = new Query(resource, criteria);
     // only keep track of the query when the component instance is not unmounted
     (getCurrentInstance() as any).scope.run(() => {
-        let queries = tableQueries[resource.table];
+        let queries = tableQueries.get(resource.table);
         if (!queries) {
-            tableQueries[resource.table] = queries = new Set();
+            tableQueries.set(resource.table, queries = new Set());
         }
         queries.add(query);
         onScopeDispose(() => {
-            queries.delete(query);
+            queries!.delete(query);
         })
     });
     return query.result;
