@@ -8,7 +8,7 @@ Vue data binding with minimal code. There are 3 motivations
 
 It is a bit controversial to ditch so called `view model` and keeping state directly inside the `view`. "entities should not be multiplied beyond necessity" - occam's razor
 
-Majority of the work is done by vue 3 reactivity system, vue-db just unleash its full potential.
+Majority of the work is done by vue 3 reactivity system, vue-db just unleash its full potential with 500 lines of code.
 
 ## Form
 
