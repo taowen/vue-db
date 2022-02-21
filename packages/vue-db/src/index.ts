@@ -316,11 +316,7 @@ export function install(app: App, options: {
 }) {
     app.mixin({
         setup() {
-            const c = getCurrentInstance();
-            if (!c) {
-                throw new Error('vdb setup not called within vue component setup');
-            }
-            const componentType = c.type as any;
+            const componentType = getCurrentInstance()!.type as any;
             let instanceCount = componentType.instanceCount;
             if (!instanceCount) {
                 instanceCount = componentType.instanceCount = ref(0);

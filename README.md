@@ -1,11 +1,14 @@
 # vue-db
 
-Vue data binding with minimal code. There are two motivations
+Vue data binding with minimal code. There are 3 motivations
 
 * cross component data sync, such as form
 * load data from backend and keeping it up to date
+* javascript based animation without cost of vue reconciliation
 
 It is a bit controversial to ditch so called `view model` and keeping state directly inside the `view`. "entities should not be multiplied beyond necessity" - occam's razor
+
+Majority of the work is done by vue 3 reactivity system, vue-db just unleash its full potential.
 
 ## Form
 
@@ -27,5 +30,12 @@ Checkout following examples
 ## Async data binding
 
 Data from backend need to be loaded asynchronously. Instead of using a mutable https://vuex.vuejs.org/ store to hold the backend data, vue-db provides async data binding to bind vue component data with backend table.
+
+TODO
+
+## Animation
+
+Animate with vue reconciliation is slow. CSS animation is feature limited. There are times we need to update the DOM element directly without triggering vue to re-render.
+vue-db serves as a data binding tool between computed property and DOM element attributes.
 
 TODO
