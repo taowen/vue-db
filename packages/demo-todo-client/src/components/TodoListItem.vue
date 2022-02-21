@@ -1,5 +1,7 @@
 <script lang="ts">
-import { T_removeTodo, T_Todo } from 'demo-todo-server';
+// only type from server side code has been used
+// there is no worry of leaking server side code to client side
+import type { T_removeTodo, T_Todo } from 'demo-todo-server';
 import { defineComponent } from 'vue';
 import * as vdb from 'vue-db';
 
