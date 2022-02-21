@@ -6,6 +6,8 @@ export default defineComponent({
     components: { TodoListItem },
     data() {
         return {
+            // this binds to backend data
+            // when command affected this table, the query will be re-run
             todos: vdb.query(Todo)
         }
     },
