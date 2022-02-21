@@ -1,4 +1,4 @@
-import { App, ComponentInternalInstance, computed, effect, getCurrentInstance, isVNode, KeepAlive, nextTick, onScopeDispose, Ref, ref, VNode } from 'vue';
+import { App, ComponentInternalInstance, computed, effect, getCurrentInstance, isVNode, KeepAlive, nextTick, onScopeDispose, readonly, Ref, ref, VNode } from 'vue';
 
 export type RpcProvider = (queries: QueryRequest[], command?: CommandRequest) => Promise<void>
 
@@ -182,8 +182,8 @@ export function defineResource<T>(table: string, options?: {
     sourceTables?: string[], // if source table changed, queries of this resource will be run again
     staticCriteria?: Record<string, any>, // some part of criteria is not context dependent, we can extract them to here
     timeout?: number
-}) {
-    return new Resource<T>(table, options);
+}): Resource<T> {
+    return readonly(new Resource<T>(table, options)) as any;
 }
 
 function isResource(target: any): target is Resource<any> {
@@ -253,34 +253,44 @@ export class Resource<T> {
     }) {
     }
 
+    private clone() {
+        const newResource = new Resource(this.table, this.options);
+        newResource.pickedFields = this.pickedFields;
+        newResource.subResources = {...this.subResources};
+        return newResource;
+    }
+
     public pick<N1 extends keyof T>(n1: N1): Resource<Pick<T, N1>>
     public pick<N1 extends keyof T, N2 extends keyof T>(n1: N1, n2: N2): Resource<Pick<T, N1 | N2>>
-    public pick(...pickedFields: string[]): Resource<T> {
-        this.pickedFields = pickedFields;
-        return this;
+    public pick(...pickedFields: string[]): Resource<any> {
+        const newResource = this.clone();
+        newResource.pickedFields = pickedFields;
+        return readonly(newResource) as any;
     }
 
     public load<N extends string, F>(fieldName: N, fieldType: Resource<F>, dynamicCriteria: Record<string, string>, options?: {
         staticCriteria?: Record<string, any>,
     }): Resource<T & { [P in N]: F }> {
-        this.subResources[fieldName] = {
+        const newResource = this.clone();
+        newResource.subResources[fieldName] = {
             single: true,
             resource: fieldType,
             dynamicCriteria,
             staticCriteria: options?.staticCriteria
         }
-        return this as any;
+        return readonly(newResource) as any;
     }
 
     public query<N extends string, F>(fieldName: N, fieldType: Resource<F>, dynamicCriteria: Record<string, string>, options?: {
         staticCriteria?: Record<string, any>,
     }): Resource<T & { [P in N]: F[] }> {
-        this.subResources[fieldName] = {
+        const newResource = this.clone();
+        newResource.subResources[fieldName] = {
             resource: fieldType,
             dynamicCriteria,
             staticCriteria: options?.staticCriteria
         }
-        return this as any;
+        return readonly(newResource) as any;
     }
 
     public toJSON() {
