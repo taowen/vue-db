@@ -2,9 +2,11 @@
 import { defineComponent } from 'vue';
 import * as vdb from 'vue-db';
 
-const saveTodo = vdb.defineCommand<((args: { content: string }) => Promise<void>)>({ 
-    command: 'saveTodo', 
-    affectedTables: ['todo']});
+type signature = (args: { content: string }) => Promise<void>;
+const rpc = vdb
+    .defineCommand<(() => void)>({ affectedTables: [] }).as('blah')
+    .defineCommand<signature>({ affectedTables: ['todo'] }).as('saveTodo')
+    .defineCommand<(() => void)>({ affectedTables: [] }).as('lalala');
 
 export default defineComponent({
     data() {
@@ -17,7 +19,7 @@ export default defineComponent({
             if (!this.content) {
                 return;
             }
-            await saveTodo({ content: this.content });        
+            await rpc.saveTodo({ content: this.content });
             this.content = '';
         }
     }

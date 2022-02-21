@@ -168,24 +168,39 @@ export function castTo<T extends VueComponent>(proxy: any, componentType: T): As
     return proxy;
 }
 
-export function defineCommand<F>(options: {
-    command: string,
+export type defineCommandChain<T> = T & {
+    defineCommand<F>(options: {
+        command?: string,
+        affectedTables: string[],
+        timeout?: number
+    }): { as<C extends string = ''>(alias: C): defineCommandChain<T & { [P in C]: F }> };
+}
+
+export function defineCommand<F>(this: any, options: {
+    command?: string,
     affectedTables: string[],
     timeout?: number
-}): F {
-    return ((args: Record<string, any>) => {
-        const queryRequests = [];
-        for (const affectedTable of options.affectedTables) {
-            const queries = tableQueries.get(affectedTable);
-            if (queries) {
-                for (const query of queries) {
-                    queryRequests.push(query.newRequest());
+}): { as<C extends string = ''>(alias: C): defineCommandChain<{ [P in C]: F }> } {
+    let prev = this && this.Resource !== Resource ? this : undefined;
+    return ({
+        as(alias: string) {
+            const stub = (args: Record<string, any>) => {
+                const queryRequests = [];
+                for (const affectedTable of options.affectedTables) {
+                    const queries = tableQueries.get(affectedTable);
+                    if (queries) {
+                        for (const query of queries) {
+                            queryRequests.push(query.newRequest());
+                        }
+                    }
                 }
-            }
+                const command = options.command || alias;
+                const commandRequest = new CommandRequest(command, args);
+                rpc(queryRequests, commandRequest)
+                return commandRequest.promise;
+            };
+            return { ...prev, [alias]: stub, defineCommand };
         }
-        const commandRequest = new CommandRequest(options.command, args);
-        rpc(queryRequests, commandRequest)
-        return commandRequest.promise;
     }) as any
 }
 
