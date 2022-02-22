@@ -24,6 +24,8 @@ jobs:
           run_install: true
       - run: cp README.md website/index.md
 
+      - run: pnpm --filter demo-* build
+      
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         if: ${{ github.ref == 'refs/heads/main' }}
@@ -31,4 +33,3 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./website
           enable_jekyll: true
-      - run: pnpm --filter demo-* build
