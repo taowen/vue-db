@@ -1,15 +1,11 @@
 # vue-db
 
-Vue 3 data binding with minimal code. There are 4 motivations
+Majority of the work is done by [vue 3 reactivity system](https://vuejs.org/api/reactivity-core.html), vue-db just unleash its full potential with 500 lines of code.
 
 * cross component data sync, such as form
 * javascript based animation without cost of vue reconciliation
 * load data from backend and keeping it up to date
 * server side rendering (SSR) initial state
-
-It is a bit controversial to ditch so called `view model` and keeping state directly inside the `view`. "entities should not be multiplied beyond necessity" - occam's razor
-
-Majority of the work is done by [vue 3 reactivity system](https://vuejs.org/api/reactivity-core.html), vue-db just unleash its full potential with 500 lines of code.
 
 ## Form
 
