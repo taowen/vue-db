@@ -20,12 +20,14 @@ export default defineComponent({
 })
 ```
 
-vdb.load has two arguments
+`vdb.load` has two arguments
 
 1. Component Type: CounterBox is the target to search for, it is like from table of SQL
 2. Criteria: the conditions of the search
 
 Although UI is a graph, `vdb.load` works like a database in just two dimension. As long as the criteria match, all descendants of $root will be searched.
+
+There is also a `vdb.query` api, which returns all rows matched instead of first one.
 
 ## Multiple page
 

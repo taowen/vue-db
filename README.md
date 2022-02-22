@@ -1,6 +1,6 @@
 # vue-db
 
-Vue 3 data binding, within **500** lines of code
+Vue 3 data binding, within [**500**](./packages/vue-db/src/index.ts) lines of code
 
 Majority of the work is done by [vue 3 reactivity system](https://vuejs.org/api/reactivity-core.html), vue-db just unleash its full potential
 
