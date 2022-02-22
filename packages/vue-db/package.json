@@ -11,6 +11,10 @@
   "devDependencies": {
     "typescript": "^4.5.5"
   },
+  "publishConfig": {
+    "directory": "dist",
+    "main": "index.js"
+  },
   "scripts": {
     "build": "tsc"
   }
