@@ -72,6 +72,23 @@ importers:
       vite: 2.8.4
       vue-tsc: 0.29.8_typescript@4.5.5
 
+  packages/demo-nested-resource:
+    specifiers:
+      '@vitejs/plugin-vue': ^2.2.0
+      typescript: ^4.5.4
+      vite: ^2.8.0
+      vue: ^3.2.25
+      vue-db: workspace:*
+      vue-tsc: ^0.29.8
+    dependencies:
+      vue: 3.2.31
+      vue-db: link:../vue-db
+    devDependencies:
+      '@vitejs/plugin-vue': 2.2.0_vite@2.8.4+vue@3.2.31
+      typescript: 4.5.5
+      vite: 2.8.4
+      vue-tsc: 0.29.8_typescript@4.5.5
+
   packages/demo-server-side-render:
     specifiers:
       '@vitejs/plugin-vue': ^2.2.0

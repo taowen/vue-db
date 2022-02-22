@@ -12,7 +12,7 @@ const rpc = vdb.defineCommand<T_removeTodo>({ affectedTables: [Todo.table] }).as
 export default defineComponent({
     props: {
         todo: {
-            default: undefined as any as { id: string, content: string }
+            default: vdb.castTo(undefined, Todo)
         }
     },
     data() {

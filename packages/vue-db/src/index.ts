@@ -213,7 +213,12 @@ export async function sleep(timeout: number) {
     return new Promise<void>(resolve => setTimeout(resolve, timeout));
 }
 
+export function castTo<T extends VueComponent>(proxy: any, componentType: T): AsVueProxy<T>;
+export function castTo<T>(proxy: any, componentType: Resource<T>): T;
 export function castTo<T extends VueComponent>(proxy: any, componentType: T): AsVueProxy<T> {
+    if (componentType instanceof Resource) {
+        return proxy;
+    }
     if (proxy.$.type !== componentType) {
         throw new Error('type mismatch');
     }
