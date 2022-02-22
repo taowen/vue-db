@@ -4,6 +4,8 @@ const vdbOptions: {
     rpcProvider: (queries: QueryRequest[], command?: CommandRequest) => Promise<void>
     hydrate?: boolean, // hydrate from ssr html, instead of fetch again
     dehydrate?: boolean, // dehydrate state as string, and inject it into rendered html
+    loadingPreDelay?: number, // delay for some milliseconds before set loading to true
+    loadingPostDelay?: number, // once loading set to true, delay for some milliseconds before set it back to false to avoid flashy experience
 } = {
     rpcProvider() {
         throw new Error('must install with rpcProvider before query or call');
@@ -32,7 +34,7 @@ export function install(app: App, options?: InstallOptions) {
                     }
                     const hydrated: Record<string, any> = {};
                     for (const [k, v] of Object.entries(toRaw(this.$.data))) {
-                        if (isRef(v) && v.value && (v.value as any).isDone) {
+                        if (isRef(v) && v.value && (v.value as any).data) {
                             hydrated[k] = (v.value as any).data;
                         }
                     }
@@ -57,7 +59,7 @@ export function install(app: App, options?: InstallOptions) {
             }
             const data = toRaw(this.$.data);
             for (const [k, v] of Object.entries(JSON.parse(dehydrated))) {
-                data[k].value = { isDone: true, data: v };
+                data[k].value = { loading: false, data: v };
             }
         },
         async serverPrefetch() {
@@ -96,7 +98,7 @@ function getPageRoot(node: ComponentInternalInstance): ComponentInternalInstance
 type VueComponent = { data?: (...args: any[]) => any, methods?: any, instanceCount?: Ref<number> };
 type AsVueProxy<T extends VueComponent> = (T['methods'] & ReturnType<NonNullable<T['data']>>)
 
-export type Future<T> = { isDone: boolean, data: T, error: any }
+export type Future<T> = { loading: boolean, data: T, error: any }
 
 export function load<T extends VueComponent>(componentType: T, criteria: { $parent: any } & Record<string, any>): AsVueProxy<T>;
 export function load<T extends VueComponent>(componentType: T, criteria: { $root: any } & Record<string, any>): AsVueProxy<T>;
@@ -106,7 +108,7 @@ export function load(target: any, criteria: any): any {
         const refFuture = queryResource(target, criteria);
         return computed(() => {
             const future = refFuture.value;
-            return { isDone: future.isDone, data: future.data[0], error: future.error }
+            return { loading: future.loading, data: future.data[0], error: future.error }
         });
     }
     return (query(target, criteria) as any)[0];
@@ -295,7 +297,7 @@ class Query {
     // 2. when async query is done, the result will be updated
     // 3. when criteria changed, query will be re-run, and then the result will be changed
     // 4. when command mutates table data, queries depending on those tables will be re-run
-    public result: Ref<{ isDone: boolean, data: any[], error: any }> = ref({ isDone: false, data: [], error: undefined });
+    public result: Ref<{ loading: boolean, data: any[], error: any }> = ref({ loading: false, data: [], error: undefined });
     public criteria: Record<string, any> = {};
     public version = 0;
 
@@ -425,7 +427,7 @@ export class QueryRequest {
             return;
         }
         this.query.version++;
-        this.query.result.value = { isDone: true, data, error: undefined };
+        this.query.result.value = { loading: false, data, error: undefined };
     }
 
     public reject(error: any) {
@@ -433,7 +435,7 @@ export class QueryRequest {
             return;
         }
         this.query.version++;
-        this.query.result.value = { isDone: true, data: [], error };
+        this.query.result.value = { loading: false, data: [], error };
     }
 
     public toJSON() {

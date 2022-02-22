@@ -18,4 +18,7 @@ Instead of hardcode the list of components in submit event handler, we `vdb.walk
 Every component will be asked if it has a method called `fillForm`, and fill the form if it can.
 Then the data collected into form object can be submitted to backend via `JSON.stringify`.
 
+We can argue the `form` object mentioned in code above is a separate copy of state. However unlike global data store, this copy of state is transient.
+It will be thrown away after the function finishes.
+
 Showing validation error is just the same process. We just need to define a method called `showError`, every form component defined with this method will be able to show error.
