@@ -24,7 +24,7 @@ export default defineComponent({
         async add() {
             const newId = `${new Date().getTime()}`;
             this.itemIds.push(newId);
-            await vdb.waitNextTick(this);
+            await vdb.waitNextTick();
             return vdb.load(TodoListItem, { $parent: this, itemId: newId });
         },
         async remove(itemId: string) {
@@ -33,7 +33,7 @@ export default defineComponent({
                 return;
             }
             this.itemIds.splice(idx, 1);
-            await vdb.waitNextTick(this);
+            await vdb.waitNextTick();
         }
     }
 })
