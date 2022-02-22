@@ -1,8 +1,9 @@
 {
     "compilerOptions": {
       "target": "esnext",
+      "declaration": true,
       "useDefineForClassFields": true,
-      "module": "commonjs",
+      "module": "esnext",
       "moduleResolution": "node",
       "incremental": true,
       "strict": true,
@@ -11,7 +12,7 @@
       "sourceMap": true,
       "resolveJsonModule": true,
       "esModuleInterop": true,
-      "outDir": "dist/cjs",
+      "outDir": "dist/esm",
       "lib": ["esnext", "dom"]
     },
     "include": ["src/**/*.ts", "src/**/*.d.ts"]
