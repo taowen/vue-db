@@ -24,10 +24,10 @@ Checkout following examples
 
 | code | live | demo | 
 | --- | --- | --- |
-| [counter](./packages/demo-counter/) | counter | `vdb.load` with $root from current page |
-| [flat form](./packages/demo-flat-form) | flat form | `vdb.walk` to dump form state |
-| [nested form](./packages/demo-nestd-form) | nested form | `vdb.load` with $parent allowing multiple form instances |
-| [todo list](./packages/demo-todo-local/) | todo list | `vdb.waitNextTick` to add new todo item |
+| [counter](https://github.com/taowen/vue-db/tree/main/packages/demo-counter) | [counter](https://vue-db.js.org/demo-counter) | `vdb.load` with $root from current page |
+| [flat form](https://github.com/taowen/vue-db/tree/main/packages/demo-flat-form) | [flat form](https://vue-db.js.org/demo-flat-form) | `vdb.walk` to dump form state |
+| [nested form](https://github.com/taowen/vue-db/tree/main/packages/demo-nested-form) | [nested form](https://vue-db.js.org/demo-nested-form) | `vdb.load` with $parent allowing multiple form instances |
+| [todo list](https://github.com/taowen/vue-db/tree/main/packages/demo-todo-local) | [todo list](https://vue-db.js.org/demo-todo-local) | `vdb.waitNextTick` to add new todo item |
 
 
 ## Animation
