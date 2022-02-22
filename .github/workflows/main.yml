@@ -26,6 +26,8 @@ jobs:
 
       - run: pnpm --filter demo-* build
       
+      - run: cp -r packages/demo-counter/dist website/demo-counter
+      
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         if: ${{ github.ref == 'refs/heads/main' }}
