@@ -7,8 +7,10 @@ Majority of the work is done by [vue 3 reactivity system](https://vuejs.org/api/
 * cross component data sync, such as form
 * javascript based animation without cost of vue reconciliation
 * load data from backend and keeping it up to date
-* server side rendering (SSR) initial state
+* server side rendering (SSR) data fetching
 * type-safe RPC with graph query opt-in
+
+It looks like a lot, but it is a tiny library only depending on vue
 
 ## Form
 
