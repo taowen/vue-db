@@ -27,6 +27,7 @@ jobs:
       - run: pnpm --filter demo-* build
       
       - run: cp -r packages/demo-counter/dist website/demo-counter
+      - run: cp -r packages/demo-flat-form/dist website/demo-flat-form
       
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
