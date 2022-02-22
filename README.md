@@ -1,6 +1,6 @@
 # vue-db
 
-Vue 3 data binding, within [**500**](./packages/vue-db/src/index.ts) lines of code
+Vue 3 data binding, within [**500**](https://github.com/taowen/vue-db/tree/main/packages/vue-db/src/index.ts) lines of code
 
 Majority of the work is done by [vue 3 reactivity system](https://vuejs.org/api/reactivity-core.html), vue-db just unleash its full potential
 
@@ -58,7 +58,7 @@ Checkout following examples
 
 ## SSR
 
-Fetching initial data for server side rendering is a hard job. vue-db aims to unify SPA and SSR data loading code. You no longer need to lift the data fetching logic to page level, every component can declare its own async data dependency.
+Fetching initial data for server side rendering is a hard job. It normally requires you to extract out async data dependency into a central place, which makes CSR and SSR code different. vue-db aims to making same component code run in both client and server. You no longer need to lift the data fetching logic to page level, every component can declare its own async data dependency.
 
 * async data fetched in server side
 * intercept component `render` function to dehydrate the state into `data-dehydrated` attribute of rendered html element
