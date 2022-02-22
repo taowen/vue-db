@@ -37,7 +37,7 @@ vue-db serves as a data binding tool between computed property and DOM element a
 
 | code | live | demo |
 | --- | --- | --- |
-| [animation](./packages/demo-animation) | animation | `vdb.animate` to bind animated props to html element |
+| [animation](https://github.com/taowen/vue-db/tree/main/packages/demo-animation) | [animation](https://vue-db.js.org/demo-animation) | `vdb.animate` to bind animated props to html element |
 
 ## Async data binding
 
@@ -54,7 +54,7 @@ Checkout following examples
 
 | code | live | demo |
 | --- | --- | --- |
-| todo [client](./packages/demo-todo-client/) [server](./packages/demo-todo-server/) | todo client server | `vdb.defineResource` and `vdb.defineCommand` to bind with backend data |
+| todo [client](https://github.com/taowen/vue-db/tree/main/packages/demo-todo-client) [server](https://github.com/taowen/vue-db/tree/main/packages/demo-todo-server) | todo [client](https://vue-db.js.org/demo-todo-client) server | `vdb.defineResource` and `vdb.defineCommand` to bind with backend data |
 
 ## SSR
 
@@ -69,8 +69,8 @@ Checkout following examples
 
 | code | live | demo |
 | --- | --- | --- |
-| [static page](./packages/demo-static-page/) | static page | renderToString in node with async data provided by `vdb.query` |
-| [server side render](./packages/demo-server-side-render) | server side render | async data `vdb.query` in server side, then hydrated in client side |
+| [static page](https://github.com/taowen/vue-db/tree/main/packages/demo-static-page) | static page | renderToString in node with async data provided by `vdb.query` |
+| [server side render](https://github.com/taowen/vue-db/tree/main/packages/demo-server-side-render) | [server side render](https://vue-db.js.org/demo-server-side-render) | async data `vdb.query` in server side, then hydrated in client side |
 
 ## Type-safe RPC
 
@@ -80,4 +80,4 @@ Checkout following examples
 
 | code | live | demo |
 | --- | --- | --- |
-| [nested resource](./packages/demo-nested-resource/) | nested resource | `vdb.defineResource` refer other resource |
+| [nested resource](https://github.com/taowen/vue-db/tree/main/packages/demo-nested-resource) | [nested resource](https://vue-db.js.org/demo-nested-resource) | `vdb.defineResource` refer other resource |
