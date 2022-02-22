@@ -1,27 +1,47 @@
-import { App, ComponentInternalInstance, computed, effect, getCurrentInstance, InjectionKey, isVNode, KeepAlive, nextTick, onScopeDispose, readonly, Ref, ref, toRaw, VNode } from 'vue';
+import { App, ComponentInternalInstance, computed, effect, getCurrentInstance, h, isRef, isVNode, KeepAlive, nextTick, onScopeDispose, readonly, Ref, ref, toRaw, VNode } from 'vue';
 
-export type InstallOptions = {
+const vdbOptions: {
     rpcProvider: (queries: QueryRequest[], command?: CommandRequest) => Promise<void>
+    hydrate?: boolean, // hydrate from ssr html, instead of fetch again
+    dehydrate?: boolean, // dehydrate state as string, and inject it into rendered html
     defaultQueryTimeout?: number, // TODO
     defaultCommandTimeout?: number, // TODO
+} = {
+    rpcProvider() {
+        throw new Error('must install with rpcProvider before query or call');
+    }
 }
-
-let rpcProvider: InstallOptions['rpcProvider'] = () => { throw new Error('must install with rpcProvider before query or call'); }
+export type InstallOptions = typeof vdbOptions;
 const tableQueries: Map<string, Set<Query>> = new Map(); // used by command affectedTables
 
 export function install(app: App, options?: InstallOptions) {
+    QueryBuffer.provide(app);
+    Object.assign(vdbOptions, options);
     app.mixin({
         created() {
-            // const oldRender = this.$.render;
-            // this.$.render = function(this: any, ...args: any[]) {
-            //     const res = oldRender.apply(this, args);
-            //     if (!res.props) {
-            //         res.props = {};
-            //     }
-            //     res.props['data-db'] = JSON.stringify(this.$.data.articles.data);
-            //     console.log(res);
-            //     return res;
-            // }
+            if (vdbOptions.dehydrate || vdbOptions.hydrate) {
+                const oldRender = this.$.render;
+                this.$.render = function (this: any, ...args: any[]) {
+                    let vnode = oldRender.apply(this, args);
+                    if (!isVNode(vnode) || typeof vnode.type !== 'string') {
+                        vnode = h('div', vnode);
+                    }
+                    if (vdbOptions.hydrate) {
+                        return vnode;
+                    }
+                    if (!vnode.props) {
+                        vnode.props = {};
+                    }
+                    const hydrated: Record<string, any> = {};
+                    for (const [k, v] of Object.entries(toRaw(this.$.data))) {
+                        if (isRef(v) && v.value && (v.value as any).isDone) {
+                            hydrated[k] = (v.value as any).data;
+                        }
+                    }
+                    vnode.props['data-dehydrated'] = JSON.stringify(hydrated);
+                    return vnode;
+                }
+            }
             const componentType = this.$.type as any;
             let instanceCount = componentType.instanceCount;
             if (!instanceCount) {
@@ -29,20 +49,23 @@ export function install(app: App, options?: InstallOptions) {
             }
             instanceCount.value++;
         },
-        // beforeMount() {
-        //     if (this.todos) {
-        //         toRaw(this.todos)._query.result.value = { isDone: true, data: [{ content: 'a' }]}
-        //         console.log(toRaw(this.todos)._query);
-        //     }
-        // },
+        beforeMount() {
+            if (!vdbOptions.hydrate) {
+                return;
+            }
+            const dehydrated = this.$el.dataset?.dehydrated;
+            if (!dehydrated) {
+                return;
+            }
+            const data = toRaw(this.$.data);
+            for (const [k, v] of Object.entries(JSON.parse(dehydrated))) {
+                data[k].value = { isDone: true, data: v };
+            }
+        },
         async serverPrefetch() {
             await QueryBuffer.inject().flushing;
         }
     })
-    QueryBuffer.provide(app);
-    if (options) {
-        rpcProvider = options.rpcProvider;
-    }
 }
 
 // bind reactive data directly to html element attributes for animation performance
@@ -225,7 +248,7 @@ export function defineCommand<F extends (args: any) => Promise<any>>(this: any, 
                 }
                 const command = options.command || alias;
                 const commandRequest = new CommandRequest(command, args);
-                rpcProvider(queryRequests, commandRequest);
+                vdbOptions.rpcProvider(queryRequests, commandRequest);
                 return commandRequest.promise;
             };
             return { ...prev, [alias]: stub, defineCommand };
@@ -268,7 +291,7 @@ class QueryBuffer {
         await waitNextTick(); // wait for batchQueries to fill up 
         const requests = this.buffered.map(q => q.newRequest());
         this.buffered = [];
-        await rpcProvider(requests);
+        await vdbOptions.rpcProvider(requests);
         this.flushing = undefined;
     }
 }
@@ -279,18 +302,22 @@ class Query {
     // 2. when async query is done, the result will be updated
     // 3. when criteria changed, query will be re-run, and then the result will be changed
     // 4. when command mutates table data, queries depending on those tables will be re-run
-    public result: Ref<{ isDone: boolean, data: any[], error: any }> = ref({ isDone: false, data: [], error: undefined, _query: this });
+    public result: Ref<{ isDone: boolean, data: any[], error: any }> = ref({ isDone: false, data: [], error: undefined });
     public criteria: Record<string, any> = {};
     public version = 0;
 
     constructor(public resource: Resource<any>, criteriaProvider?: () => Record<string, any>) {
         const queryBuffer = QueryBuffer.inject();
+        const component = getCurrentInstance()!;
         // subscribe criteria via effect
         effect(() => {
             if (criteriaProvider) {
                 this.criteria = criteriaProvider();
             }
-            queryBuffer.execute(this);
+            const shouldSkip = vdbOptions.hydrate && !component.isMounted;
+            if (!shouldSkip) {
+                queryBuffer.execute(this);
+            }
         })
     }
 

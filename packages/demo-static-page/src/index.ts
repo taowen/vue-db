@@ -18,7 +18,7 @@ function main() {
             // delay 1 second to showcase we can wait for data fetching before rendering
             await vdb.sleep(1000);
             if (queries[0]) {
-                queries[0].resolve(['a', 'b']);
+                queries[0].resolve(['Zen and the Art of Motorcycle Maintenance: An Inquiry into Values', 'The Hitchhikers Guide to the Galaxy']);
             }
         }
     } as vdb.InstallOptions)

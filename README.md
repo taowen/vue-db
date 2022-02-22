@@ -1,11 +1,12 @@
 # vue-db
 
-Majority of the work is done by [vue 3 reactivity system](https://vuejs.org/api/reactivity-core.html), vue-db just unleash its full potential with 500 lines of code.
+Majority of the work is done by [vue 3 reactivity system](https://vuejs.org/api/reactivity-core.html), vue-db just unleash its full potential with **500** lines of code.
 
 * cross component data sync, such as form
 * javascript based animation without cost of vue reconciliation
 * load data from backend and keeping it up to date
 * server side rendering (SSR) initial state
+* type-safe RPC with graph query opt-in
 
 ## Form
 
@@ -53,6 +54,12 @@ Checkout following examples
 
 ## SSR
 
-Fetching initial data for server side rendering is a hard job. vue-db aims to unify SPA and SSR data loading code.
+Fetching initial data for server side rendering is a hard job. vue-db aims to unify SPA and SSR data loading code. You no longer need to lift the data fetching logic to page level, every component can declare its own async data dependency.
 
- TODO
+TODO
+
+## Type-safe RPC
+
+If both server and client are written in typescript, the `.d.ts` file can be used as type-safe RPC data schema. vue-db allow you to `import type` and hand-write a RPC stub with very little code, instead of resorting to full blown code generation solution. Also `vdb.defineResource` support declaring nested resource, allow client to query for a object graph in one RPC roundtrip. However, the wire-protocol and server side implementation is excluded from the scope. vue-db is just a tiny library depending only on vue 3, it will not enforce a server/client framework to you.
+
+TODO
