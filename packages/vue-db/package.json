@@ -11,9 +11,10 @@
   "devDependencies": {
     "typescript": "^4.5.5"
   },
-  "files": ["dist"],
+  "files": ["dist/*.js"],
   "publishConfig": {
-    "main": "dist/index.js"
+    "main": "dist/index.js",
+    "typings": "dist/index.d.ts"
   },
   "scripts": {
     "build": "tsc"
