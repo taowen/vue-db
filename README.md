@@ -56,7 +56,15 @@ Checkout following examples
 
 Fetching initial data for server side rendering is a hard job. vue-db aims to unify SPA and SSR data loading code. You no longer need to lift the data fetching logic to page level, every component can declare its own async data dependency.
 
-TODO
+* async data fetched in server side
+* intercept component `render` function to dehydrate the state into `data-dehydrated` attribute of rendered html element
+* client side got the html and start hydration
+* in client component `beforeMount` lifecycle hook, read `data-dehydrated` and set state into component data
+
+| code | live | demo |
+| --- | --- | --- |
+| [static page](./packages/demo-static-page/) | static page | renderToString in node with async data provided by `vdb.query` |
+| [server side render](./packages/demo-server-side-render) | server side render | async data `vdb.query` in server side, then hydrated in client side |
 
 ## Type-safe RPC
 
