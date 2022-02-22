@@ -1,4 +1,4 @@
-import { App, ComponentInternalInstance, computed, effect, getCurrentInstance, isVNode, KeepAlive, nextTick, onScopeDispose, readonly, Ref, ref, VNode } from 'vue';
+import { App, ComponentInternalInstance, computed, effect, getCurrentInstance, InjectionKey, isVNode, KeepAlive, nextTick, onScopeDispose, readonly, Ref, ref, toRaw, VNode } from 'vue';
 
 export type InstallOptions = {
     rpcProvider: (queries: QueryRequest[], command?: CommandRequest) => Promise<void>
@@ -8,12 +8,20 @@ export type InstallOptions = {
 
 let rpcProvider: InstallOptions['rpcProvider'] = () => { throw new Error('must install with rpcProvider before query or call'); }
 const tableQueries: Map<string, Set<Query>> = new Map(); // used by command affectedTables
-let batchQueries: Query[] = []; // initial page rendering will batch queries together
-let flushing: Promise<void> | undefined; // is batchQueries being flushing
 
 export function install(app: App, options?: InstallOptions) {
     app.mixin({
         created() {
+            // const oldRender = this.$.render;
+            // this.$.render = function(this: any, ...args: any[]) {
+            //     const res = oldRender.apply(this, args);
+            //     if (!res.props) {
+            //         res.props = {};
+            //     }
+            //     res.props['data-db'] = JSON.stringify(this.$.data.articles.data);
+            //     console.log(res);
+            //     return res;
+            // }
             const componentType = this.$.type as any;
             let instanceCount = componentType.instanceCount;
             if (!instanceCount) {
@@ -21,10 +29,17 @@ export function install(app: App, options?: InstallOptions) {
             }
             instanceCount.value++;
         },
+        // beforeMount() {
+        //     if (this.todos) {
+        //         toRaw(this.todos)._query.result.value = { isDone: true, data: [{ content: 'a' }]}
+        //         console.log(toRaw(this.todos)._query);
+        //     }
+        // },
         async serverPrefetch() {
-            await flushing;
+            await QueryBuffer.inject().flushing;
         }
     })
+    QueryBuffer.provide(app);
     if (options) {
         rpcProvider = options.rpcProvider;
     }
@@ -233,12 +248,29 @@ function isResource(target: any): target is Resource<any> {
     return false;
 }
 
-async function flushQueries() {
-    await waitNextTick(); // wait for batchQueries to fill up 
-    const requests = batchQueries.map(q => q.newRequest());
-    batchQueries = [];
-    await rpcProvider(requests);
-    flushing = undefined;
+class QueryBuffer {
+    public static key = Symbol();
+    public static provide(app: App) {
+        app.provide(QueryBuffer.key, new QueryBuffer());
+    }
+    public static inject(): QueryBuffer {
+        return getCurrentInstance()!.appContext.provides[QueryBuffer.key];
+    }
+    private buffered: Query[] = [];
+    public flushing?: Promise<void>;
+    public execute(query: Query) {
+        this.buffered.push(query);
+        if (this.buffered.length === 1) {
+            this.flushing = this.flush();
+        }
+    }
+    private async flush() {
+        await waitNextTick(); // wait for batchQueries to fill up 
+        const requests = this.buffered.map(q => q.newRequest());
+        this.buffered = [];
+        await rpcProvider(requests);
+        this.flushing = undefined;
+    }
 }
 
 class Query {
@@ -252,15 +284,13 @@ class Query {
     public version = 0;
 
     constructor(public resource: Resource<any>, criteriaProvider?: () => Record<string, any>) {
+        const queryBuffer = QueryBuffer.inject();
         // subscribe criteria via effect
         effect(() => {
             if (criteriaProvider) {
                 this.criteria = criteriaProvider();
             }
-            batchQueries.push(this);
-            if (batchQueries.length === 1) {
-                flushing = flushQueries();
-            }
+            queryBuffer.execute(this);
         })
     }
 
@@ -337,7 +367,7 @@ export class Resource<T> {
 }
 
 function queryResource(resource: Resource<any>, criteria: () => Record<string, any>): Ref<Future<any[]>> {
-    const query = new Query(resource, criteria);
+    const query = new Query(toRaw(resource), criteria);
     // only keep track of the query when the component instance is not unmounted
     (getCurrentInstance() as any).scope.run(() => {
         let queries = tableQueries.get(resource.table);

@@ -1,4 +1,4 @@
-import { createSSRApp } from 'vue'
+import { createSSRApp, h } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 import * as vdb from 'vue-db';
 
@@ -10,7 +10,9 @@ function main() {
             // declare a async data dependency
             articles: vdb.query(Article) 
         }),
-        template: `hello {{ articles.data }}`
+        render() {
+            return h('div', `hello ${JSON.stringify(this.articles.data)}`)
+        }
     }).use(vdb, {
         async rpcProvider(queries) {
             // delay 1 second to showcase we can wait for data fetching before rendering
