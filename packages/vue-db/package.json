@@ -11,6 +11,7 @@
   "devDependencies": {
     "typescript": "^4.5.5"
   },
+  "files": ["dist"],
   "publishConfig": {
     "main": "dist/index.js"
   },
