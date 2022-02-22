@@ -1,5 +1,5 @@
 {
-  "name": "demo-todo-server",
+  "name": "demo-static-page",
   "private": true,
   "version": "0.0.0",
   "main": "src/index.ts",
@@ -12,6 +12,6 @@
     "@types/node": "^14.14.31"
   },
   "scripts": {
-    "start": "tsc && exec bin/start.js"
+    "render": "tsc && exec node dist/index.js"
   }
 }

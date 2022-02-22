@@ -57,11 +57,10 @@ export function start() {
         for (const query of body.queries) {
             queryResponses.push(await executeQuery(query));
         }
-        res.write(JSON.stringify({
+        res.send(JSON.stringify({
             command: commandResponse,
             queries: queryResponses
         }))
-        res.end();
     })
 
     app.listen(port, () => {

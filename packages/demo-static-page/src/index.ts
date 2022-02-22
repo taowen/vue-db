@@ -1,18 +1,20 @@
-// this runs in Node.js on the server.
 import { createSSRApp } from 'vue'
-// Vue's server-rendering API is exposed under `vue/server-renderer`.
 import { renderToString } from 'vue/server-renderer'
 import * as vdb from 'vue-db';
 
 const Article = vdb.defineResource('article');
 
-export function start() {
+function main() {
     const app = createSSRApp({
-        data: () => ({ articles: vdb.query(Article) }),
+        data: () => ({ 
+            // declare a async data dependency
+            articles: vdb.query(Article) 
+        }),
         template: `hello {{ articles.data }}`
     }).use(vdb, {
         async rpcProvider(queries) {
-            await vdb.sleep(1);
+            // delay 1 second to showcase we can wait for data fetching before rendering
+            await vdb.sleep(1000);
             if (queries[0]) {
                 queries[0].resolve(['a', 'b']);
             }
@@ -23,3 +25,5 @@ export function start() {
         console.log(html)
     })
 }
+
+main();
