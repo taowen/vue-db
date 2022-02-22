@@ -28,6 +28,8 @@ jobs:
       
       - run: cp -r packages/demo-counter/dist website/demo-counter
       - run: cp -r packages/demo-flat-form/dist website/demo-flat-form
+      - run: cp -r packages/demo-nested-form/dist website/demo-nested-form
+      - run: cp -r packages/demo-todo-local/dist website/demo-todo-local
       
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
