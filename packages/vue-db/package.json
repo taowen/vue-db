@@ -1,10 +1,10 @@
 {
   "name": "vue-db",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "vue data binding",
   "main": "dist/cjs/index.js",
   "browser": "src/index.ts",
-  "typings": "src/index.ts",
+  "types": "src/index.ts",
   "dependencies": {
     "vue": "^3.2.25"
   },
@@ -13,12 +13,13 @@
   },
   "files": ["dist/cjs/*.js", "dist/esm/*.js", "dist/esm/*.d.ts"],
   "publishConfig": {
-    "main": "dist/cjs/index.js",
-    "browser": "dist/esm/index.js",
-    "typings": "dist/esm/index.d.ts"
+    "directory": "dist",
+    "main": "cjs/index.js",
+    "browser": "esm/index.js",
+    "types": "esm/index.d.ts"
   },
   "scripts": {
     "build": "tsc",
-    "dist": "tsc && tsc -p tsconfig-esm.json"
+    "dist": "tsc && tsc -p tsconfig-esm.json && cp ../../README.md dist && cp ../../LICENSE dist"
   }
 }

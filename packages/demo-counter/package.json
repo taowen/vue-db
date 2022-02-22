@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "vue": "^3.2.25",
-    "vue-db": "^0.0.1",
+    "vue-db": "workspace:*",
     "vue-router": "^4.0.12"
   },
   "devDependencies": {
