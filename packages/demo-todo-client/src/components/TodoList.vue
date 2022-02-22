@@ -27,5 +27,6 @@ export default defineComponent({
 <template>
     {{ completedCount }} out of {{ todos.data.length }} items completed
     <span v-if="!todos.isDone">loading...</span>
+    <span v-if="todos.error">{{ todos.error }}</span>
     <TodoListItem v-for="todo in todos.data" :key="todo.id" :todo="todo" />
 </template>

@@ -4,8 +4,11 @@ import App from './App.vue';
 
 export const app = createApp(App);
 app.use(vdb, {
+    defaultCommandTimeout: 1000,
+    defaultQueryTimeout: 1000,
     rpcProvider: async (queries, command) => {
         try {
+            // this is just an example, the actual wire-protocol is up to you
             const resp = await fetch('http://localhost:8080/', {
                 headers: {
                     'Content-Type': 'application/json'

@@ -109,12 +109,14 @@ async function queryTodo(query: QueryRequest) {
 let nextId = 1;
 
 async function saveTodo(args: { content: string }) {
+    console.log('saveTodo', args.content);
     todos.push({ ...args, id: `${nextId++}` })
 }
 
 export type T_saveTodo = typeof saveTodo;
 
 async function removeTodo(args: { id: string }) {
+    console.log('removeTodo', args.id);
     const filtered = [];
     for (const row of todos) {
         if (row.id !== args.id) {

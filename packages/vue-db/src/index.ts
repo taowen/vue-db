@@ -104,7 +104,7 @@ export function load<T extends VueComponent>(componentType: T, criteria: { $pare
 export function load<T extends VueComponent>(componentType: T, criteria: { $root: any } & Record<string, any>): AsVueProxy<T>;
 export function load<T>(resource: Resource<T>, criteria?: () => Record<string, any>): Ref<Future<T>>;
 export function load(target: any, criteria: any): any {
-    if (isResource(target)) {
+    if (target instanceof Resource) {
         const refFuture = queryResource(target, criteria);
         return computed(() => {
             const future = refFuture.value;
@@ -118,7 +118,7 @@ export function query<T extends VueComponent>(componentType: T, criteria: { $par
 export function query<T extends VueComponent>(componentType: T, criteria: { $root: any } & Record<string, any>): AsVueProxy<T>[];
 export function query<T>(resource: Resource<T>, criteria?: () => Record<string, any>): Ref<Future<T[]>>;
 export function query(target: any, criteria: any): any {
-    if (isResource(target)) {
+    if (target instanceof Resource) {
         return queryResource(target, criteria);
     }
     const componentType = target;
@@ -247,7 +247,7 @@ export function defineCommand<F extends (args: any) => Promise<any>>(this: any, 
                     }
                 }
                 const command = options.command || alias;
-                const commandRequest = new CommandRequest(command, args);
+                const commandRequest = new CommandRequest(command, args, vdbOptions.defaultCommandTimeout || options?.timeout);
                 vdbOptions.rpcProvider(queryRequests, commandRequest);
                 return commandRequest.promise;
             };
@@ -264,12 +264,7 @@ export function defineResource<T>(table: string, options?: {
     return readonly(new Resource<T>(table, options)) as any;
 }
 
-function isResource(target: any): target is Resource<any> {
-    if (target.constructor === Resource) {
-        return true;
-    }
-    return false;
-}
+export class TimeoutError extends Error { };
 
 class QueryBuffer {
     public static key = Symbol();
@@ -288,7 +283,7 @@ class QueryBuffer {
         }
     }
     private async flush() {
-        await waitNextTick(); // wait for batchQueries to fill up 
+        await waitNextTick(); // wait for other components rendering in this tick to fill up buffer
         const requests = this.buffered.map(q => q.newRequest());
         this.buffered = [];
         await vdbOptions.rpcProvider(requests);
@@ -337,7 +332,7 @@ export class Resource<T> {
         staticCriteria?: Record<string, any>
     }> = {}
 
-    constructor(public readonly table: string, private options?: {
+    constructor(public readonly table: string, public options?: {
         sourceTables?: string[],
         staticCriteria?: Record<string, any>,
         timeout?: number
@@ -417,6 +412,10 @@ export class QueryRequest {
     constructor(private query: Query) {
         this.baseVersion = query.version;
         this.criteria = query.criteria;
+        const timeout = vdbOptions.defaultQueryTimeout || this.resource.options?.timeout;
+        if (timeout !== undefined) {
+            this.checkTimeout(timeout);
+        }
     }
 
     public get resource() {
@@ -428,10 +427,16 @@ export class QueryRequest {
         return this.baseVersion !== this.query.version;
     }
 
+    private async checkTimeout(timeout: number) {
+        await sleep(timeout);
+        this.reject(new TimeoutError('query timeout'));
+    }
+
     public resolve(data: any[]) {
         if (this.isExpired) {
             return;
         }
+        this.query.version++;
         this.query.result.value = { isDone: true, data, error: undefined };
     }
 
@@ -439,6 +444,7 @@ export class QueryRequest {
         if (this.isExpired) {
             return;
         }
+        this.query.version++;
         this.query.result.value = { isDone: true, data: [], error };
     }
 
@@ -452,12 +458,29 @@ export class CommandRequest {
     public promise: Promise<any>;
     public resolve: (result: any) => void = undefined as any;
     public reject: (error: any) => void = undefined as any;
+    private responded: boolean = false;
 
-    constructor(public command: string, public args: Record<string, any>) {
+    constructor(public command: string, public args: Record<string, any>, timeout?: number) {
         this.promise = new Promise<any>((resolve, reject) => {
-            this.resolve = resolve;
-            this.reject = reject;
+            this.resolve = (result) => {
+                if (this.responded) { return; }
+                this.responded = true;
+                resolve(result)
+            };
+            this.reject = (error) => {
+                if (this.responded) { return; }
+                this.responded = true;
+                reject(error)
+            };
         });
+        if (timeout) {
+            this.checkTimeout(timeout);
+        }
+    }
+
+    private async checkTimeout(timeout: number) {
+        await sleep(timeout);
+        this.reject(new TimeoutError('command timeout'));
     }
 
     public toJSON() {
