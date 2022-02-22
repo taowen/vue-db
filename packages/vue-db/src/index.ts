@@ -4,8 +4,6 @@ const vdbOptions: {
     rpcProvider: (queries: QueryRequest[], command?: CommandRequest) => Promise<void>
     hydrate?: boolean, // hydrate from ssr html, instead of fetch again
     dehydrate?: boolean, // dehydrate state as string, and inject it into rendered html
-    defaultQueryTimeout?: number, // TODO
-    defaultCommandTimeout?: number, // TODO
 } = {
     rpcProvider() {
         throw new Error('must install with rpcProvider before query or call');
@@ -226,14 +224,12 @@ export type defineCommandChain<T> = T & {
     defineCommand<F extends (args: any) => Promise<any>>(options: {
         command?: string,
         affectedTables: string[],
-        timeout?: number // TODO
     }): { as<C extends string = ''>(alias: C): defineCommandChain<T & { [P in C]: F }> };
 }
 
 export function defineCommand<F extends (args: any) => Promise<any>>(this: any, options: {
     command?: string,
     affectedTables: string[],
-    timeout?: number
 }): { as<C extends string = ''>(alias: C): defineCommandChain<{ [P in C]: F }> } {
     let prev = this && this.Resource !== Resource ? this : undefined;
     return ({
@@ -247,7 +243,7 @@ export function defineCommand<F extends (args: any) => Promise<any>>(this: any, 
                     }
                 }
                 const command = options.command || alias;
-                const commandRequest = new CommandRequest(command, args, vdbOptions.defaultCommandTimeout || options?.timeout);
+                const commandRequest = new CommandRequest(command, args);
                 vdbOptions.rpcProvider(queryRequests, commandRequest);
                 return commandRequest.promise;
             };
@@ -259,12 +255,9 @@ export function defineCommand<F extends (args: any) => Promise<any>>(this: any, 
 export function defineResource<T>(table: string, options?: {
     sourceTables?: string[], // if source table changed, queries of this resource will be run again
     staticCriteria?: Record<string, any>, // some part of criteria is not context dependent, we can extract them to here
-    timeout?: number // TODO
 }): Resource<T> {
     return readonly(new Resource<T>(table, options)) as any;
 }
-
-export class TimeoutError extends Error { };
 
 class QueryBuffer {
     public static key = Symbol();
@@ -335,7 +328,6 @@ export class Resource<T> {
     constructor(public readonly table: string, public options?: {
         sourceTables?: string[],
         staticCriteria?: Record<string, any>,
-        timeout?: number
     }) {
     }
 
@@ -412,10 +404,6 @@ export class QueryRequest {
     constructor(private query: Query) {
         this.baseVersion = query.version;
         this.criteria = query.criteria;
-        const timeout = vdbOptions.defaultQueryTimeout || this.resource.options?.timeout;
-        if (timeout !== undefined) {
-            this.checkTimeout(timeout);
-        }
     }
 
     public get resource() {
@@ -425,11 +413,6 @@ export class QueryRequest {
     // avoid early request override late request
     private get isExpired() {
         return this.baseVersion !== this.query.version;
-    }
-
-    private async checkTimeout(timeout: number) {
-        await sleep(timeout);
-        this.reject(new TimeoutError('query timeout'));
     }
 
     public resolve(data: any[]) {
@@ -460,7 +443,7 @@ export class CommandRequest {
     public reject: (error: any) => void = undefined as any;
     private responded: boolean = false;
 
-    constructor(public command: string, public args: Record<string, any>, timeout?: number) {
+    constructor(public command: string, public args: Record<string, any>) {
         this.promise = new Promise<any>((resolve, reject) => {
             this.resolve = (result) => {
                 if (this.responded) { return; }
@@ -473,14 +456,6 @@ export class CommandRequest {
                 reject(error)
             };
         });
-        if (timeout) {
-            this.checkTimeout(timeout);
-        }
-    }
-
-    private async checkTimeout(timeout: number) {
-        await sleep(timeout);
-        this.reject(new TimeoutError('command timeout'));
     }
 
     public toJSON() {
