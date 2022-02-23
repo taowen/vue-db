@@ -16,7 +16,7 @@ import * as vdb from 'vue-db';
 export const Todo = vdb.defineResource<T_Todo>('todo');
 ```
 
-The T_Todo is just typescript defined by the server
+The T_Todo is just a typescript interface defined by the server
 
 ```ts
 class Todo {
@@ -28,7 +28,8 @@ export type { Todo as T_Todo };
 ```
 
 Buy export type and import type, there is no runtime dependency here. We just use typescript to check the client code match with the server.
-If server is not written in typescript, we need to use `any` to declare the server data type manually.
+If server is not written in typescript, we may use `any` or declare the server data type manually.
+If server is written in typescript, it does not need to define extra interface for RPC, `export type` will extract the type information and generate `.d.ts` file after typescript compile.
 
 ## vdb.query
 
