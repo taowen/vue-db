@@ -300,7 +300,7 @@ class QueryBuffer {
 }
 
 class Query {
-    // query result is a ref so that we can bind data to it
+    // query result is a ref so that we can bind data and reactive ui to it
     // 1. initially it has no data, as async computation takes time
     // 2. when async query is done, the result will be updated
     // 3. when criteria changed, query will be re-run, and then the result will be changed
@@ -318,8 +318,8 @@ class Query {
             if (criteriaProvider) {
                 this.criteria = criteriaProvider();
             }
-            const shouldSkip = vdbOptions.hydrate && !component.isMounted;
-            if (!shouldSkip) {
+            const isHydrating = vdbOptions.hydrate && !component.isMounted;
+            if (!isHydrating) {
                 this.queryBuffer.execute(this.newRequest(!component.isMounted));
             }
         })
