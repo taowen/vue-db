@@ -157,12 +157,13 @@ You can send both command and queries together in one RPC roundtrip if your serv
 
 ## How about complex queries?
 
-It is common mistake to send complex query, even complete SQL via public network.
-vue-db leave the server to define complex SQL or other domain specific transformation.
+It is common mistake to send complex query, even complete SQL via public network. 
+It is hard to implement for both frontend and backend, it is also insecure due to large attack surface.
+vue-db leave the backend developer to define complex SQL or other domain specific transformation.
 The client just need to tell server what "table" to fetch from, with what criteria (just a `Record<string, any>`).
 The server might map to a physical mysql table, or the "table" cloud just be a SQL, or whatever the server developer choose.
 
-For example if want to query for the most recent todo, we can declare
+For example if we need to show most recent todo, we can declare
 
 ```ts
 vdb.defineResource<T_Todo>('recent_todo', {
