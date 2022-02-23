@@ -4,8 +4,10 @@ import App from './App.vue';
 
 export const app = createApp(App);
 app.use(vdb, {
-    defaultCommandTimeout: 1000,
-    defaultQueryTimeout: 1000,
+    // wait 200 milliseconds before showing loading indicator
+    loadingPreDelay: 200,
+    // once loading indicator is shown, at least show it for 1000 milliseconds
+    loadingPostDelay: 5000,
     rpcProvider: async (queries, command) => {
         try {
             // this is just an example, the actual wire-protocol is up to you

@@ -274,9 +274,9 @@ class QueryBuffer {
     public static inject(): QueryBuffer {
         return getCurrentInstance()!.appContext.provides[QueryBuffer.key];
     }
-    private buffered: Query[] = [];
+    private buffered: QueryRequest[] = [];
     public flushing?: Promise<void>;
-    public execute(query: Query) {
+    public execute(query: QueryRequest) {
         this.buffered.push(query);
         if (this.buffered.length === 1) {
             this.flushing = this.flush();
@@ -284,7 +284,7 @@ class QueryBuffer {
     }
     private async flush() {
         await waitNextTick(); // wait for other components rendering in this tick to fill up buffer
-        const requests = this.buffered.map(q => q.newRequest());
+        const requests = this.buffered;
         this.buffered = [];
         await vdbOptions.rpcProvider(requests);
         this.flushing = undefined;
@@ -311,14 +311,14 @@ class Query {
             }
             const shouldSkip = vdbOptions.hydrate && !component.isMounted;
             if (!shouldSkip) {
-                queryBuffer.execute(this);
+                queryBuffer.execute(this.newRequest(!component.isMounted));
             }
         })
     }
 
-    public newRequest() {
+    public newRequest(showLoading?: boolean) {
         this.version++;
-        return new QueryRequest(this);
+        return new QueryRequest(this, !!showLoading);
     }
 }
 
@@ -405,10 +405,26 @@ export class QueryRequest {
 
     private baseVersion: number;
     public criteria: Record<string, any>;
+    private showingLoading?: Promise<void>;
 
-    constructor(private query: Query) {
+    constructor(private query: Query, public showLoading: boolean) {
         this.baseVersion = query.version;
         this.criteria = query.criteria;
+        if (showLoading) {
+            if (vdbOptions.loadingPreDelay) {
+                sleep(vdbOptions.loadingPreDelay || 0).then(() => {
+                    this.showingLoading = this.loadingCountdown();
+                })
+            } else {
+                this.showingLoading = this.loadingCountdown();
+            }
+        }
+    }
+
+    private async loadingCountdown() {
+        if (this.isExpired) { return; } // hide loading if actual data can be shown fast enough
+        this.query.result.value = { loading: true, data: [], error: undefined };
+        await sleep(vdbOptions.loadingPostDelay || 0); // show loading for at least this long
     }
 
     public get resource() {
@@ -421,7 +437,12 @@ export class QueryRequest {
     }
 
     public resolve(data: any[]) {
-        if (this.isExpired) {
+        if (this.isExpired) { return; }
+        if (this.showingLoading) {
+            this.showingLoading.then(() => {
+                this.showingLoading = undefined;
+                this.resolve(data);
+            });
             return;
         }
         this.query.version++;
@@ -429,7 +450,12 @@ export class QueryRequest {
     }
 
     public reject(error: any) {
-        if (this.isExpired) {
+        if (this.isExpired) { return; }
+        if (this.showingLoading) {
+            this.showingLoading.then(() => {
+                this.showingLoading = undefined;
+                this.reject(error);
+            });
             return;
         }
         this.query.version++;
