@@ -34,3 +34,14 @@ There is also a `vdb.query` api, which returns all rows matched instead of first
 When we are switching between routes, there are multiple active pages. If we search from the top, component from other vue-router page might be located. `vdb.pageOf` solves this problem, to limit search within enclosing `<keep-alive/>`.
 
 If we are using `global data store` instead of vue-db. The state of UI component will be copied to the store. Because we allow each client side page has a separate counter, the `global data store` will need corresponding data structure to match the UI state need. Whenever we change the UI, the data store structure need to keep up. vue-db let the UI itself to host its own data, and treat it as a `database`, it removes the need of extra copy of state.
+
+## Vue component creation order
+
+One vue component depending data on another vue component has following negative consequences:
+
+1. The data might be stale, as new vue component might be created after you query for it. In react concurrency community, this is also called [tearing](https://github.com/reactwg/react-18/discussions/69)
+2. Exception might be thrown, as you assume it is there, actually it has not been created yete
+
+Using `vdb.query` for a vue component is a data subscription. When new vue component of that type has been created, previous queries will be re-run.
+`vdb.load` only take one item from `vdb.query` result, so when there is no match, it will return undefined.
+It is important we do null check properly, otherwise code will throw exception.
