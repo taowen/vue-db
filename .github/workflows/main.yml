@@ -35,10 +35,21 @@ jobs:
       - run: cp -r packages/demo-server-side-render/dist website/demo-server-side-render
       - run: cp -r packages/demo-nested-resource/dist website/demo-nested-resource
       
-      - name: Deploy
+      - name: Deploy to vue-db.js.org
         uses: peaceiris/actions-gh-pages@v3
         if: ${{ github.ref == 'refs/heads/main' }}
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          personal_token: ${{ secrets.PERSONAL_TOKEN }}
           publish_dir: ./website
           enable_jekyll: true
+          
+      - name: Deploy to autonomy.design
+        uses: peaceiris/actions-gh-pages@v3
+        if: ${{ github.ref == 'refs/heads/main' }}
+        with:
+          personal_token: ${{ secrets.PERSONAL_TOKEN }}
+          publish_dir: ./website
+          enable_jekyll: true
+          external_repository: taowen/modularization-examples
+          publish_branch: master
+          destination_dir: docs/vue-db
