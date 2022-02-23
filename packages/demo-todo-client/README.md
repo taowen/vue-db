@@ -118,7 +118,7 @@ app.use(vdb, {
     // wait 200 milliseconds before showing loading indicator
     loadingPreDelay: 200,
     // once loading indicator is shown, at least show it for 1000 milliseconds
-    loadingPostDelay: 5000,
+    loadingPostDelay: 1000,
     rpcProvider: async (queries, command) => {
         try {
             // this is just an example, the actual wire-protocol is up to you
@@ -154,3 +154,21 @@ app.mount('#app')
 when `app.use(vdb, options)` the options can define a rpcProvider to specify how rpc should be done.
 As we can see everytime rpcProvider being called, it is provided with the command to execute as well as the queries need to be refreshed AFTER command being executed.
 You can send both command and queries together in one RPC roundtrip if your server supports that, or you can do command first then send queries.
+
+## How about complex queries?
+
+It is common mistake to send complex query, even complete SQL via public network.
+vue-db leave the server to define complex SQL or other domain specific transformation.
+The client just need to tell server what "table" to fetch from, with what criteria (just a `Record<string, any>`).
+The server might map to a physical mysql table, or the "table" cloud just be a SQL, or whatever the server developer choose.
+
+For example if want to query for the most recent todo, we can declare
+
+```ts
+vdb.defineResource<T_Todo>('recent_todo', {
+    sourceTables: ['todo']
+})
+```
+
+When server get the query of recent_todo, it might filter out and sort todo by date.
+The sourceTables are used to decide if command affectedTables will trigger this query to re-run.

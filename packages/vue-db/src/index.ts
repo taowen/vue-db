@@ -397,14 +397,16 @@ function queryResource(resource: Resource<any>, criteria: () => Record<string, a
     const query = new Query(toRaw(resource), criteria);
     // only keep track of the query when the component instance is not unmounted
     (getCurrentInstance() as any).scope.run(() => {
-        let queries = tableQueries.get(resource.table);
-        if (!queries) {
-            tableQueries.set(resource.table, queries = new Set());
+        for (const table of resource.options?.sourceTables ? [resource.table, ...resource.options.sourceTables] : [resource.table]) {
+            let queries = tableQueries.get(table);
+            if (!queries) {
+                tableQueries.set(resource.table, queries = new Set());
+            }
+            queries.add(query);
+            onScopeDispose(() => {
+                queries!.delete(query);
+            })
         }
-        queries.add(query);
-        onScopeDispose(() => {
-            queries!.delete(query);
-        })
     });
     return query.result;
 }
