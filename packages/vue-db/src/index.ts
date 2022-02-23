@@ -292,9 +292,6 @@ class QueryBuffer {
         const requests = this.buffered;
         this.buffered = [];
         await vdbOptions.rpcProvider(requests);
-        for (const request of requests) {
-            await request.showingLoading
-        }
         this.flushing = undefined;
     }
 }
@@ -418,12 +415,12 @@ export class QueryRequest {
 
     private baseVersion: number;
     public criteria: Record<string, any>;
-    public showingLoading?: Promise<void>;
+    private showingLoading?: Promise<void>;
 
     constructor(private query: Query, public showLoading: boolean) {
         this.baseVersion = query.version;
         this.criteria = query.criteria;
-        if (showLoading) {
+        if (showLoading && !vdbOptions.dehydrate) {
             if (vdbOptions.loadingPreDelay) {
                 sleep(vdbOptions.loadingPreDelay || 0).then(() => {
                     this.showingLoading = this.loadingCountdown();
