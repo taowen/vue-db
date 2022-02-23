@@ -13,8 +13,9 @@ import CounterBox from './CounterBox.vue';
 export default defineComponent({
     computed: {
         displayBack() {
-            const counter = vdb.load(CounterBox, { $root: vdb.pageOf(this) })?.count || 0;
-            return counter + 20;
+            const counterBox = vdb.load(CounterBox, { $root: vdb.pageOf(this) });
+            const count = counterBox?.count || 0;
+            return count + 20;
         }
     }
 })
@@ -44,4 +45,4 @@ One vue component depending data on another vue component has following negative
 
 Using `vdb.query` for a vue component is a data subscription. When new vue component of that type has been created, previous queries will be re-run.
 `vdb.load` only take one item from `vdb.query` result, so when there is no match, it will return undefined.
-It is important we do null check properly, otherwise code will throw exception.
+It is important we do null check properly (`const count = counterBox?.count || 0`), otherwise code will throw exception.

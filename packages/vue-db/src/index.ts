@@ -15,7 +15,8 @@ export type InstallOptions = typeof vdbOptions;
 const tableQueries: Map<string, Set<Query>> = new Map(); // used by command affectedTables
 
 export function install(app: App, options?: InstallOptions) {
-    QueryBuffer.provide(app);
+    const queryBuffer = new QueryBuffer();
+    app.provide(QueryBuffer.key, queryBuffer);
     Object.assign(vdbOptions, options);
     app.mixin({
         created() {
@@ -67,8 +68,11 @@ export function install(app: App, options?: InstallOptions) {
                 data[k].value = { loading: false, data: v };
             }
         },
+        unmounted() {
+            this.$.type.instanceCount.value--;
+        },
         async serverPrefetch() {
-            await QueryBuffer.inject().flushing;
+            await queryBuffer.flushing;
         }
     })
 }
@@ -273,12 +277,6 @@ export function defineResource<T>(table: string, options?: {
 
 class QueryBuffer {
     public static key = Symbol();
-    public static provide(app: App) {
-        app.provide(QueryBuffer.key, new QueryBuffer());
-    }
-    public static inject(): QueryBuffer {
-        return getCurrentInstance()!.appContext.provides[QueryBuffer.key];
-    }
     private buffered: QueryRequest[] = [];
     public flushing?: Promise<void>;
     public execute(query: QueryRequest) {
@@ -308,8 +306,8 @@ class Query {
     private queryBuffer: QueryBuffer;
 
     constructor(public resource: Resource<any>, criteriaProvider?: () => Record<string, any>) {
-        this.queryBuffer = QueryBuffer.inject();
         const component = getCurrentInstance()!;
+        this.queryBuffer = component.appContext.provides[QueryBuffer.key];
         // subscribe criteria via effect
         effect(() => {
             if (criteriaProvider) {

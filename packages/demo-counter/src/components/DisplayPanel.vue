@@ -6,8 +6,9 @@ import CounterBox from './CounterBox.vue';
 export default defineComponent({
     computed: {
         displayBack() {
-            const counter = vdb.load(CounterBox, { $root: vdb.pageOf(this) })?.count || 0;
-            return counter + 20;
+            const counterBox = vdb.load(CounterBox, { $root: vdb.pageOf(this) });
+            const count = counterBox?.count || 0;
+            return count + 20;
         }
     }
 })
