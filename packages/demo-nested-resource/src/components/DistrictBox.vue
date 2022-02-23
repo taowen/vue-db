@@ -3,7 +3,8 @@ import { defineComponent } from 'vue';
 import * as vdb from 'vue-db';
 import type { T_District } from './fakeServer';
 
-export const District = vdb.defineResource<T_District>('district');
+export const District = vdb.defineResource<T_District>('district')
+    .pick('name');
 
 export default defineComponent({
     props: {
@@ -12,7 +13,5 @@ export default defineComponent({
 })
 </script>
 <template>
-<div>
-    District: {{ district.name }}
-</div>
+    <div>District: {{ district.name }}</div>
 </template>

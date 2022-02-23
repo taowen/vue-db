@@ -345,11 +345,9 @@ export class Resource<T> {
         return newResource;
     }
 
-    public pick<N1 extends keyof T>(n1: N1): Resource<Pick<T, N1>>
-    public pick<N1 extends keyof T, N2 extends keyof T>(n1: N1, n2: N2): Resource<Pick<T, N1 | N2>>
-    public pick(...pickedFields: string[]): Resource<any> {
+    public pick<P extends object>(...pickedFields: (keyof P & keyof T)[]): Resource<P> {
         const newResource = this.clone();
-        newResource.pickedFields = pickedFields;
+        newResource.pickedFields = pickedFields as any;
         return readonly(newResource) as any;
     }
 
