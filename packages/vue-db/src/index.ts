@@ -33,12 +33,14 @@ export function install(app: App, options?: InstallOptions) {
                         vnode.props = {};
                     }
                     const hydrated: Record<string, any> = {};
-                    for (const [k, v] of Object.entries(toRaw(this.$.data))) {
-                        if (isRef(v) && v.value && (v.value as any).data) {
-                            hydrated[k] = (v.value as any).data;
+                    const stale: Record<string, any> = {};
+                    for (const [k, v] of Object.entries(toRaw<Record<string, Ref<Future<any>>>>(this.$.data))) {
+                        if (isRef(v) && v.value && v.value.data) {
+                            (v.value.stale ? stale : hydrated)[k] = v.value.data;
                         }
                     }
                     vnode.props['data-dehydrated'] = JSON.stringify(hydrated);
+                    vnode.props['data-stale'] = JSON.stringify(stale);
                     return vnode;
                 }
             }
@@ -53,12 +55,15 @@ export function install(app: App, options?: InstallOptions) {
             if (!vdbOptions.hydrate) {
                 return;
             }
-            const dehydrated = this.$el.dataset?.dehydrated;
-            if (!dehydrated) {
-                return;
-            }
             const data = toRaw(this.$.data);
-            for (const [k, v] of Object.entries(JSON.parse(dehydrated))) {
+            const dehydrated = JSON.parse(this.$el.dataset?.dehydrated || '{}');
+            const stale = JSON.parse(this.$el.dataset?.stale || '{}');
+            for (const k of Object.keys(stale)) {
+                if (data[k].value._query) {
+                    data[k].value._query.refresh();
+                }
+            }
+            for (const [k, v] of Object.entries({...dehydrated, ...stale})) {
                 data[k].value = { loading: false, data: v };
             }
         },
@@ -98,7 +103,7 @@ function getPageRoot(node: ComponentInternalInstance): ComponentInternalInstance
 type VueComponent = { data?: (...args: any[]) => any, methods?: any, instanceCount?: Ref<number> };
 type AsVueProxy<T extends VueComponent> = (T['methods'] & ReturnType<NonNullable<T['data']>>)
 
-export type Future<T> = { loading: boolean, data: T, error: any }
+export type Future<T> = { loading: boolean, data: T, error?: any, stale?: boolean }
 
 export function load<T extends VueComponent>(componentType: T, criteria: { $parent: any } & Record<string, any>): AsVueProxy<T>;
 export function load<T extends VueComponent>(componentType: T, criteria: { $root: any } & Record<string, any>): AsVueProxy<T>;
@@ -287,6 +292,9 @@ class QueryBuffer {
         const requests = this.buffered;
         this.buffered = [];
         await vdbOptions.rpcProvider(requests);
+        for (const request of requests) {
+            await request.showingLoading
+        }
         this.flushing = undefined;
     }
 }
@@ -297,12 +305,13 @@ class Query {
     // 2. when async query is done, the result will be updated
     // 3. when criteria changed, query will be re-run, and then the result will be changed
     // 4. when command mutates table data, queries depending on those tables will be re-run
-    public result: Ref<{ loading: boolean, data: any[], error: any }> = ref({ loading: false, data: [], error: undefined });
+    public result: Ref<{ loading: boolean, data: any[], error?: any, stale?: boolean }> = ref({ loading: false, data: [], error: undefined, _query: this });
     public criteria: Record<string, any> = {};
     public version = 0;
+    private queryBuffer: QueryBuffer;
 
     constructor(public resource: Resource<any>, criteriaProvider?: () => Record<string, any>) {
-        const queryBuffer = QueryBuffer.inject();
+        this.queryBuffer = QueryBuffer.inject();
         const component = getCurrentInstance()!;
         // subscribe criteria via effect
         effect(() => {
@@ -311,7 +320,7 @@ class Query {
             }
             const shouldSkip = vdbOptions.hydrate && !component.isMounted;
             if (!shouldSkip) {
-                queryBuffer.execute(this.newRequest(!component.isMounted));
+                this.queryBuffer.execute(this.newRequest(!component.isMounted));
             }
         })
     }
@@ -319,6 +328,10 @@ class Query {
     public newRequest(showLoading?: boolean) {
         this.version++;
         return new QueryRequest(this, !!showLoading);
+    }
+
+    public refresh() {
+        this.queryBuffer.execute(this.newRequest());
     }
 }
 
@@ -405,7 +418,7 @@ export class QueryRequest {
 
     private baseVersion: number;
     public criteria: Record<string, any>;
-    private showingLoading?: Promise<void>;
+    public showingLoading?: Promise<void>;
 
     constructor(private query: Query, public showLoading: boolean) {
         this.baseVersion = query.version;
@@ -436,17 +449,17 @@ export class QueryRequest {
         return this.baseVersion !== this.query.version;
     }
 
-    public resolve(data: any[]) {
+    public resolve(data: any[], stale?: boolean) {
         if (this.isExpired) { return; }
         if (this.showingLoading) {
             this.showingLoading.then(() => {
                 this.showingLoading = undefined;
-                this.resolve(data);
+                this.resolve(data, stale);
             });
             return;
         }
         this.query.version++;
-        this.query.result.value = { loading: false, data, error: undefined };
+        this.query.result.value = { loading: false, data, error: undefined, stale };
     }
 
     public reject(error: any) {
