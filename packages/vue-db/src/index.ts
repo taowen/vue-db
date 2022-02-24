@@ -64,7 +64,7 @@ export function install(app: App, options?: InstallOptions) {
                     data[k].value._query.refresh();
                 }
             }
-            for (const [k, v] of Object.entries({...dehydrated, ...stale})) {
+            for (const [k, v] of Object.entries({ ...dehydrated, ...stale })) {
                 data[k].value = { loading: false, data: v };
             }
         },
@@ -73,22 +73,6 @@ export function install(app: App, options?: InstallOptions) {
         },
         async serverPrefetch() {
             await queryBuffer.flushing;
-        }
-    })
-}
-
-// bind reactive data directly to html element attributes for animation performance
-export function animate(elem: HTMLElement, animatedPropsProvider: () => Record<string, any>) {
-    effect(() => {
-        const animatedProps = animatedPropsProvider();
-        for (const [k, v] of Object.entries(animatedProps)) {
-            if (typeof v === 'object') { // such as style
-                for (const [k2, v2] of Object.entries(v)) {
-                    (elem as any)[k][k2] = v2;
-                }
-            } else {
-                (elem as any)[k] = v;
-            }
         }
     })
 }
@@ -215,9 +199,7 @@ function walkComponent(isRoot: boolean, method: string, args: any[], node: Compo
 }
 
 export function waitNextTick() {
-    return new Promise<void>(resolve => {
-        nextTick(resolve);
-    });
+    return new Promise<void>(resolve => nextTick(resolve));
 }
 
 export async function sleep(timeout: number) {
@@ -227,12 +209,8 @@ export async function sleep(timeout: number) {
 export function castTo<T extends VueComponent>(proxy: any, componentType: T): AsVueProxy<T>;
 export function castTo<T>(proxy: any, componentType: Resource<T>): T;
 export function castTo<T extends VueComponent>(proxy: any, componentType: T): AsVueProxy<T> {
-    if (componentType instanceof Resource) {
-        return proxy;
-    }
-    if (proxy.$.type !== componentType) {
-        throw new Error('type mismatch');
-    }
+    if (componentType instanceof Resource) { return proxy; }
+    if (proxy.$.type !== componentType) { throw new Error('type mismatch'); }
     return proxy;
 }
 
@@ -393,20 +371,30 @@ export class Resource<T> {
     }
 }
 
+function getQueriesOfTable(table: string) {
+    let queries = tableQueries.get(table);
+    if (!queries) {
+        tableQueries.set(table, queries = new Set());
+    }
+    return queries!;
+}
+
+function getResourceTables(resource: Resource<any>): string[] {
+    let tables = resource.options?.sourceTables ? [resource.table, ...resource.options.sourceTables] : [resource.table];
+    for (const subResource of Object.values(resource.subResources)) {
+        tables = [...tables, ...getResourceTables(subResource.resource)]
+    }
+    return tables;
+}
+
 function queryResource(resource: Resource<any>, criteria: () => Record<string, any>): Ref<Future<any[]>> {
     const query = new Query(toRaw(resource), criteria);
-    // only keep track of the query when the component instance is not unmounted
     (getCurrentInstance() as any).scope.run(() => {
-        for (const table of resource.options?.sourceTables ? [resource.table, ...resource.options.sourceTables] : [resource.table]) {
-            let queries = tableQueries.get(table);
-            if (!queries) {
-                tableQueries.set(resource.table, queries = new Set());
-            }
-            queries.add(query);
-            onScopeDispose(() => {
-                queries!.delete(query);
-            })
-        }
+        const tables = getResourceTables(resource);
+        tables.forEach(table => getQueriesOfTable(table).add(query));
+        onScopeDispose(() => { // when component unmount, we can remove the query
+            tables.forEach(table => getQueriesOfTable(table).delete(query));
+        });
     });
     return query.result;
 }
