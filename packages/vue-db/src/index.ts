@@ -68,11 +68,11 @@ export function install(app: App, options?: InstallOptions) {
                 data[k].value = { loading: false, data: v };
             }
         },
-        unmounted() {
-            this.$.type.instanceCount.value--;
-        },
         async serverPrefetch() {
             await queryBuffer.flushing;
+        },
+        unmounted() {
+            this.$.type.instanceCount.value--;
         }
     })
 }
@@ -214,98 +214,11 @@ export function castTo<T extends VueComponent>(proxy: any, componentType: T): As
     return proxy;
 }
 
-export type defineCommandChain<T> = T & {
-    defineCommand<F extends (args: any) => Promise<any>>(options: {
-        command?: string,
-        affectedTables: string[],
-    }): { as<C extends string = ''>(alias: C): defineCommandChain<T & { [P in C]: F }> };
-}
-
-export function defineCommand<F extends (args: any) => Promise<any>>(this: any, options: {
-    command?: string,
-    affectedTables: string[],
-}): { as<C extends string = ''>(alias: C): defineCommandChain<{ [P in C]: F }> } {
-    let prev = this && this.Resource !== Resource ? this : undefined;
-    return ({
-        as(alias: string) {
-            const stub = (args: Record<string, any>) => {
-                const queryRequests = [];
-                for (const affectedTable of options.affectedTables) {
-                    const queries = tableQueries.get(affectedTable);
-                    for (const query of queries || []) {
-                        queryRequests.push(query.newRequest());
-                    }
-                }
-                const command = options.command || alias;
-                const commandRequest = new CommandRequest(command, args);
-                vdbOptions.rpcProvider(queryRequests, commandRequest);
-                return commandRequest.promise;
-            };
-            return { ...prev, [alias]: stub, defineCommand };
-        }
-    }) as any
-}
-
 export function defineResource<T>(table: string, options?: {
     sourceTables?: string[], // if source table changed, queries of this resource will be run again
     staticCriteria?: Record<string, any>, // some part of criteria is not context dependent, we can extract them to here
 }): Resource<T> {
     return readonly(new Resource<T>(table, options)) as any;
-}
-
-class QueryBuffer {
-    public static key = Symbol();
-    private buffered: QueryRequest[] = [];
-    public flushing?: Promise<void>;
-    public execute(query: QueryRequest) {
-        this.buffered.push(query);
-        if (this.buffered.length === 1) {
-            this.flushing = this.flush();
-        }
-    }
-    private async flush() {
-        await waitNextTick(); // wait for other components rendering in this tick to fill up buffer
-        const requests = this.buffered;
-        this.buffered = [];
-        await vdbOptions.rpcProvider(requests);
-        this.flushing = undefined;
-    }
-}
-
-class Query {
-    // query result is a ref so that we can bind data and reactive ui to it
-    // 1. initially it has no data, as async computation takes time
-    // 2. when async query is done, the result will be updated
-    // 3. when criteria changed, query will be re-run, and then the result will be changed
-    // 4. when command mutates table data, queries depending on those tables will be re-run
-    public result: Ref<{ loading: boolean, data: any[], error?: any, stale?: boolean }> = ref({ loading: false, data: [], error: undefined, _query: this });
-    public criteria: Record<string, any> = {};
-    public version = 0;
-    private queryBuffer: QueryBuffer;
-
-    constructor(public resource: Resource<any>, criteriaProvider?: () => Record<string, any>) {
-        const component = getCurrentInstance()!;
-        this.queryBuffer = component.appContext.provides[QueryBuffer.key];
-        // subscribe criteria via effect
-        effect(() => {
-            if (criteriaProvider) {
-                this.criteria = criteriaProvider();
-            }
-            const isHydrating = vdbOptions.hydrate && !component.isMounted;
-            if (!isHydrating) {
-                this.queryBuffer.execute(this.newRequest(!component.isMounted));
-            }
-        })
-    }
-
-    public newRequest(showLoading?: boolean) {
-        this.version++;
-        return new QueryRequest(this, !!showLoading);
-    }
-
-    public refresh() {
-        this.queryBuffer.execute(this.newRequest());
-    }
 }
 
 export class Resource<T> {
@@ -371,6 +284,18 @@ export class Resource<T> {
     }
 }
 
+function queryResource(resource: Resource<any>, criteria: () => Record<string, any>): Ref<Future<any[]>> {
+    const query = new Query(toRaw(resource), criteria);
+    (getCurrentInstance() as any).scope.run(() => {
+        const tables = getResourceTables(resource);
+        tables.forEach(table => getQueriesOfTable(table).add(query));
+        onScopeDispose(() => { // when component unmount, we can remove the query
+            tables.forEach(table => getQueriesOfTable(table).delete(query));
+        });
+    });
+    return query.result;
+}
+
 function getQueriesOfTable(table: string) {
     let queries = tableQueries.get(table);
     if (!queries) {
@@ -387,16 +312,59 @@ function getResourceTables(resource: Resource<any>): string[] {
     return tables;
 }
 
-function queryResource(resource: Resource<any>, criteria: () => Record<string, any>): Ref<Future<any[]>> {
-    const query = new Query(toRaw(resource), criteria);
-    (getCurrentInstance() as any).scope.run(() => {
-        const tables = getResourceTables(resource);
-        tables.forEach(table => getQueriesOfTable(table).add(query));
-        onScopeDispose(() => { // when component unmount, we can remove the query
-            tables.forEach(table => getQueriesOfTable(table).delete(query));
-        });
-    });
-    return query.result;
+class QueryBuffer {
+    public static key = Symbol();
+    private buffered: QueryRequest[] = [];
+    public flushing?: Promise<void>;
+    public execute(query: QueryRequest) {
+        this.buffered.push(query);
+        if (this.buffered.length === 1) {
+            this.flushing = this.flush();
+        }
+    }
+    private async flush() {
+        await waitNextTick(); // wait for other components rendering in this tick to fill up buffer
+        const requests = this.buffered;
+        this.buffered = [];
+        await vdbOptions.rpcProvider(requests);
+        this.flushing = undefined;
+    }
+}
+
+class Query {
+    // query result is a ref so that we can bind data and reactive ui to it
+    // 1. initially it has no data, as async computation takes time
+    // 2. when async query is done, the result will be updated
+    // 3. when criteria changed, query will be re-run, and then the result will be changed
+    // 4. when command mutates table data, queries depending on those tables will be re-run
+    public result: Ref<{ loading: boolean, data: any[], error?: any, stale?: boolean }> = ref({ loading: false, data: [], error: undefined, _query: this });
+    public criteria: Record<string, any> = {};
+    public version = 0;
+    private queryBuffer: QueryBuffer;
+
+    constructor(public resource: Resource<any>, criteriaProvider?: () => Record<string, any>) {
+        const component = getCurrentInstance()!;
+        this.queryBuffer = component.appContext.provides[QueryBuffer.key];
+        // subscribe criteria via effect
+        effect(() => {
+            if (criteriaProvider) {
+                this.criteria = criteriaProvider();
+            }
+            const isHydrating = vdbOptions.hydrate && !component.isMounted;
+            if (!isHydrating) {
+                this.queryBuffer.execute(this.newRequest(!component.isMounted));
+            }
+        })
+    }
+
+    public newRequest(showLoading?: boolean) {
+        this.version++;
+        return new QueryRequest(this, !!showLoading);
+    }
+
+    public refresh() {
+        this.queryBuffer.execute(this.newRequest());
+    }
 }
 
 export class QueryRequest {
@@ -463,6 +431,38 @@ export class QueryRequest {
     public toJSON() {
         return { resource: this.resource, criteria: this.criteria }
     }
+}
+
+export type defineCommandChain<T> = T & {
+    defineCommand<F extends (args: any) => Promise<any>>(options: {
+        command?: string,
+        affectedTables: string[],
+    }): { as<C extends string = ''>(alias: C): defineCommandChain<T & { [P in C]: F }> };
+}
+
+export function defineCommand<F extends (args: any) => Promise<any>>(this: any, options: {
+    command?: string,
+    affectedTables: string[],
+}): { as<C extends string = ''>(alias: C): defineCommandChain<{ [P in C]: F }> } {
+    let prev = this && this.Resource !== Resource ? this : undefined;
+    return ({
+        as(alias: string) {
+            const stub = (args: Record<string, any>) => {
+                const queryRequests = [];
+                for (const affectedTable of options.affectedTables) {
+                    const queries = tableQueries.get(affectedTable);
+                    for (const query of queries || []) {
+                        queryRequests.push(query.newRequest());
+                    }
+                }
+                const command = options.command || alias;
+                const commandRequest = new CommandRequest(command, args);
+                vdbOptions.rpcProvider(queryRequests, commandRequest);
+                return commandRequest.promise;
+            };
+            return { ...prev, [alias]: stub, defineCommand };
+        }
+    }) as any
 }
 
 export class CommandRequest {
