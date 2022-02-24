@@ -30,7 +30,6 @@ jobs:
       - run: cp -r packages/demo-flat-form/dist website/demo-flat-form
       - run: cp -r packages/demo-nested-form/dist website/demo-nested-form
       - run: cp -r packages/demo-todo-local/dist website/demo-todo-local
-      - run: cp -r packages/demo-animation/dist website/demo-animation
       - run: cp -r packages/demo-todo-client/dist website/demo-todo-client
       - run: cp -r packages/demo-server-side-render/dist website/demo-server-side-render
       - run: cp -r packages/demo-nested-resource/dist website/demo-nested-resource
