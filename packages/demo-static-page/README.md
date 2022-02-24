@@ -1,3 +1,13 @@
+# Motivation
+
+Generate static page using node.js might fetch remote data. If we can not know who is fetching data, we can not be sure the page rendered is complete.
+This is a huge problem if data loading is unorganized.
+
+## renderToString
+
+vue has a async api renderToString
+
+```ts
 import { createSSRApp, h } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 import * as vdb from 'vue-db';
@@ -31,3 +41,18 @@ async function main() {
 }
 
 main();
+```
+
+In rpcProvider, `await vdb.sleep(1000)` ensure the data is not resolved immediately. The problem is can we get a complete html after renderToString?
+
+## vdb.query
+
+When `app.use(vdb)`, a mixin will be installed into vue application.
+
+```ts
+async serverPrefetch() {
+    await queryBuffer.flushing;
+}
+```
+
+This lifecycle hook is provided by vue to ensure async data has been resolved, before renderToString. The queryBuffer is filled by `vdb.query`, and we can wait for its flushing. If all async data is fetched via `vdb.query` or `vdb.load`, we can be sure the result of renderToString is a complete page.
