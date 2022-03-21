@@ -6,6 +6,7 @@ const vdbOptions: {
     dehydrate?: boolean, // dehydrate state as string, and inject it into rendered html
     loadingPreDelay?: number, // delay for some milliseconds before set loading to true
     loadingPostDelay?: number, // once loading set to true, delay for some milliseconds before set it back to false to avoid flashy experience
+    wrapperComponent?: string, // default to div
 } = {
     rpcProvider() {
         throw new Error('must install with rpcProvider before query or call');
@@ -24,21 +25,24 @@ export function install(app: App, options?: InstallOptions) {
                 const oldRender = this.$.render;
                 this.$.render = function (this: any, ...args: any[]) {
                     let vnode = oldRender.apply(this, args);
-                    if (!isVNode(vnode) || typeof vnode.type !== 'string') {
-                        vnode = h('div', vnode);
-                    }
-                    if (vdbOptions.hydrate) {
-                        return vnode;
-                    }
-                    if (!vnode.props) {
-                        vnode.props = {};
-                    }
                     const hydrated: Record<string, any> = {};
                     const stale: Record<string, any> = {};
                     for (const [k, v] of Object.entries(toRaw<Record<string, Ref<Future<any>>>>(this.$.data))) {
                         if (isRef(v) && v.value && v.value.data) {
                             (v.value.stale ? stale : hydrated)[k] = v.value.data;
                         }
+                    }
+                    if (Object.keys(stale).length === 0 && Object.keys(hydrated).length === 0) {
+                        return vnode;
+                    }
+                    if (!isVNode(vnode) || typeof vnode.type !== 'string') {
+                        vnode = h(vdbOptions.wrapperComponent || 'div', vnode);
+                    }
+                    if (vdbOptions.hydrate) {
+                        return vnode;
+                    }
+                    if (!vnode.props) {
+                        vnode.props = {};
                     }
                     vnode.props['data-dehydrated'] = JSON.stringify(hydrated);
                     vnode.props['data-stale'] = JSON.stringify(stale);
@@ -57,8 +61,8 @@ export function install(app: App, options?: InstallOptions) {
                 return;
             }
             const data = toRaw(this.$.data);
-            const dehydrated = JSON.parse(this.$el.dataset?.dehydrated || '{}');
-            const stale = JSON.parse(this.$el.dataset?.stale || '{}');
+            const dehydrated = JSON.parse(this.$el?.dataset?.dehydrated || '{}');
+            const stale = JSON.parse(this.$el?.dataset?.stale || '{}');
             for (const k of Object.keys(stale)) {
                 if (data[k].value._query) {
                     data[k].value._query.refresh();
@@ -345,6 +349,9 @@ class Query {
     constructor(public resource: Resource<any>, criteriaProvider?: () => Record<string, any>) {
         const component = getCurrentInstance()!;
         this.queryBuffer = component.appContext.provides[QueryBuffer.key];
+        if (!this.queryBuffer) {
+            throw new Error('please add app.use(vdb) to install vue-db before query');
+        }
         // subscribe criteria via effect
         effect(() => {
             if (criteriaProvider) {

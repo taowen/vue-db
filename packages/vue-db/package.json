@@ -1,6 +1,6 @@
 {
   "name": "vue-db",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "vue data binding",
   "main": "dist/cjs/index.js",
   "module": "src/index.ts",

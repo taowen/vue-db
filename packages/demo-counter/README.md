@@ -41,7 +41,7 @@ If we are using `global data store` instead of vue-db. The state of UI component
 One vue component depending data on another vue component has following negative consequences:
 
 1. The data might be stale, as new vue component might be created after you query for it. In react concurrency community, this is also called [tearing](https://github.com/reactwg/react-18/discussions/69)
-2. Exception might be thrown, as you assume it is there, actually it has not been created yete
+2. Exception might be thrown, as you assume it is there, actually it has not been created yet
 
 Using `vdb.query` for a vue component is a data subscription. When new vue component of that type has been created, previous queries will be re-run.
 `vdb.load` only take one item from `vdb.query` result, so when there is no match, it will return undefined.
