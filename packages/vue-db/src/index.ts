@@ -103,7 +103,7 @@ export type Future<T> = { loading: boolean, data: T, error?: any, stale?: boolea
 
 export function load<T extends VueComponent>(componentType: T, criteria: { $parent: any } & Record<string, any>): AsVueProxy<T>;
 export function load<T extends VueComponent>(componentType: T, criteria: { $root: any } & Record<string, any>): AsVueProxy<T>;
-export function load<T>(resource: Resource<T>, criteria?: () => Record<string, any>): Ref<Future<T>>;
+export function load<T>(resource: Resource<T>, criteria?: () => Record<string, any>): Future<T>;
 export function load(target: any, criteria: any): any {
     if (target instanceof Resource) {
         const refFuture = queryResource(target, criteria);
@@ -119,7 +119,7 @@ export function load(target: any, criteria: any): any {
 
 export function query<T extends VueComponent>(componentType: T, criteria: { $parent: any } & Record<string, any>): AsVueProxy<T>[];
 export function query<T extends VueComponent>(componentType: T, criteria: { $root: any } & Record<string, any>): AsVueProxy<T>[];
-export function query<T>(resource: Resource<T>, criteria?: () => Record<string, any>): Ref<Future<T[]>>;
+export function query<T>(resource: Resource<T>, criteria?: () => Record<string, any>): Future<T[]>;
 export function query(target: any, criteria: any): any {
     if (target instanceof Resource) {
         return queryResource(target, criteria);
