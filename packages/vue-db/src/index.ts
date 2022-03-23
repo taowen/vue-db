@@ -69,7 +69,11 @@ export function install(app: App, options?: InstallOptions) {
                 }
             }
             for (const [k, v] of Object.entries({ ...dehydrated, ...stale })) {
-                data[k].value = { loading: false, data: v };
+                if (data[k].__query_ref__) {
+                    data[k].__query_ref__.value = { loading: false, data: [v] }
+                } else {
+                    data[k].value = { loading: false, data: v };
+                }
             }
         },
         async serverPrefetch() {
@@ -103,10 +107,12 @@ export function load<T>(resource: Resource<T>, criteria?: () => Record<string, a
 export function load(target: any, criteria: any): any {
     if (target instanceof Resource) {
         const refFuture = queryResource(target, criteria);
-        return computed(() => {
+        const loadSingle = computed(() => {
             const future = refFuture.value;
             return { loading: future.loading, data: future.data[0], error: future.error }
         });
+        (loadSingle as any).__query_ref__ = refFuture;
+        return loadSingle;
     }
     return (query(target, criteria) as any)[0];
 }
